@@ -2,8 +2,7 @@
 
 **냉장고 관리 서비스 \<냉큼\>**
 
-![](vertopal_055ab5feed194edf995511dfb2180e9c/media/image1.png){width="6.665972222222222in"
-height="6.036111111111111in"}
+<img src="image01.png" width="6.665972222222222in" height="6.036111111111111">
 
 (22211499, 정형주, wjdgudwn36@gmail.com)
 
@@ -72,8 +71,8 @@ height="6.036111111111111in"}
 
 **2. System context diagram**
 
-![](vertopal_055ab5feed194edf995511dfb2180e9c/media/image2.png){width="6.754861111111111in"
-height="3.9368055555555554in"}
+<img src="image02.png" width="6.754861111111111"
+height="3.9368055555555554">
 
 **3. Use case list**
 
