@@ -2,7 +2,7 @@
 
 **냉장고 관리 서비스 \<냉큼\>**
 
-<img src="image01.png" width="1000.665972222222222in" height="550.036111111111111">
+<img src="NengKuem_Logo.png" width="800" >
 
 (22211499, 정형주, wjdgudwn36@gmail.com)
 
@@ -81,7 +81,7 @@
 
 --------------- -------------------------------------------------------
 
-<img src="image02.png" width="1000"
+<img src="NengKuem_System_Interaction_Diagram.png" width="1000"
 height="290">
 
 --------------- -------------------------------------------------------
