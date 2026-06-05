@@ -1,8 +1,26 @@
-﻿import { AVAILABLE_FOODS } from '../constants/foodCategories';
+﻿import { useState } from 'react';
 
-// 2단계 메인 화면입니다.
-// 기능은 아직 없고, 정적 냉장고 UI에 식재료 카탈로그 목록만 추가합니다.
+import { AVAILABLE_FOODS } from '../constants/foodCategories';
+import { StorageZone } from '../components/fridge/StorageZone';
+import type { FoodItem } from '../types/food';
+import type { StoredFoodItem } from '../types/ingredient';
+
+// 4단계 메인 화면입니다.
+// 왼쪽 식재료를 클릭하면 냉장 칸에 추가되는 가장 기본적인 기능을 연결합니다.
 export function DashboardPage() {
+  const freezerItems: StoredFoodItem[] = [];
+  const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
+
+  const handleAddToFridge = (food: FoodItem) => {
+    const newItem: StoredFoodItem = {
+      ...food,
+      uniqueId: `${food.id}-${Date.now()}`,
+      section: 'fridge',
+    };
+
+    setFridgeItems((prevItems) => [...prevItems, newItem]);
+  };
+
   return (
     <div
       className="size-full bg-gradient-to-br from-sky-50 to-white p-4 md:p-8 overflow-hidden flex flex-col"
@@ -35,32 +53,23 @@ export function DashboardPage() {
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {AVAILABLE_FOODS.map((food) => (
-                    <div
+                    <button
                       key={food.id}
-                      className="flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg bg-white border-2 border-sky-200"
+                      type="button"
+                      onClick={() => handleAddToFridge(food)}
+                      className="flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg bg-white border-2 border-sky-200 hover:border-sky-400 hover:shadow-md transition-all"
                     >
                       <span className="text-xl">{food.emoji}</span>
                       <span className="text-[9px] font-medium text-gray-700">{food.name}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
             </aside>
 
             <section className="flex-1 min-h-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-xl shadow-2xl p-4 md:p-6 border-2 border-gray-300 h-full flex flex-col gap-3 md:gap-4">
-              <div className="flex-1 rounded-lg border-2 border-sky-300 bg-sky-50 p-4 flex flex-col">
-                <h2 className="font-bold text-center text-sky-600 mb-3">냉동 칸</h2>
-                <div className="flex-1 rounded-lg border-2 border-dashed border-sky-200 bg-white/70 flex items-center justify-center">
-                  <p className="text-sm font-medium text-sky-500">아직 등록된 식재료가 없습니다.</p>
-                </div>
-              </div>
-
-              <div className="flex-1 rounded-lg border-2 border-sky-300 bg-sky-50 p-4 flex flex-col">
-                <h2 className="font-bold text-center text-sky-600 mb-3">냉장 칸</h2>
-                <div className="flex-1 rounded-lg border-2 border-dashed border-sky-200 bg-white/70 flex items-center justify-center">
-                  <p className="text-sm font-medium text-sky-500">아직 등록된 식재료가 없습니다.</p>
-                </div>
-              </div>
+              <StorageZone section="freezer" title="냉동 칸" items={freezerItems} />
+              <StorageZone section="fridge" title="냉장 칸" items={fridgeItems} />
             </section>
           </div>
         </main>
