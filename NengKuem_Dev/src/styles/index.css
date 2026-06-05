@@ -1,0 +1,5 @@
+/* 앱 전체 스타일의 진입점입니다.
+   폰트, Tailwind 설정, 디자인 토큰을 한 번에 불러옵니다. */
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';

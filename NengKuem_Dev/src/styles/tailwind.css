@@ -1,0 +1,3 @@
+/* Tailwind CSS를 켜고, src 폴더 안의 React/TypeScript 파일에서 쓰는 className을 스캔합니다. */
+@import 'tailwindcss' source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
