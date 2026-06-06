@@ -9,11 +9,12 @@ interface ItemEditPanelProps {
   onExpiryDateChange: (expiryDate: string) => void;
   onMemoChange: (memo: string) => void;
   onSave: () => void;
+  onDelete: () => void;
   onClose: () => void;
 }
 
 // 식재료 카드 클릭 시 열리는 간단한 상세 수정 패널입니다.
-// 이름, 유통기한, 메모를 수정할 수 있고 이후 단계에서 삭제 기능까지 확장합니다.
+// 이름, 유통기한, 메모를 수정하고 현재 식재료를 삭제할 수 있습니다.
 export function ItemEditPanel({
   item,
   nameValue,
@@ -23,6 +24,7 @@ export function ItemEditPanel({
   onExpiryDateChange,
   onMemoChange,
   onSave,
+  onDelete,
   onClose,
 }: ItemEditPanelProps) {
   return (
@@ -79,7 +81,15 @@ export function ItemEditPanel({
           </div>
         </div>
 
-        <div className="mt-5 flex gap-2">
+        <button
+          type="button"
+          onClick={onDelete}
+          className="mt-5 w-full rounded-lg border-2 border-red-500 bg-white py-2 text-sm font-bold text-red-500 transition-colors hover:bg-red-50"
+        >
+          삭제
+        </button>
+
+        <div className="mt-2 flex gap-2">
           <button
             type="button"
             onClick={onClose}

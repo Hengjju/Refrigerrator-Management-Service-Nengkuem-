@@ -6,8 +6,8 @@ import { StorageZone } from '../components/fridge/StorageZone';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 
-// 9단계 메인 화면입니다.
-// 식재료 추가/삭제/이름 수정/유통기한 입력에 더해, 상세 패널에서 메모를 입력할 수 있습니다.
+// 10단계 메인 화면입니다.
+// 식재료 상세 패널에서 이름, 유통기한, 메모를 수정하고 삭제까지 할 수 있습니다.
 export function DashboardPage() {
   const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
@@ -191,9 +191,12 @@ export function DashboardPage() {
           onExpiryDateChange={setEditingExpiryDate}
           onMemoChange={setEditingMemo}
           onSave={handleSaveItemDetail}
+          onDelete={() => handleDeleteItem(selectedItem)}
           onClose={handleCloseEditPanel}
         />
       )}
     </div>
   );
 }
+
+
