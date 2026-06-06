@@ -4,11 +4,12 @@ interface StorageZoneProps {
   section: StorageSection;
   title: string;
   items: StoredFoodItem[];
+  onDeleteItem: (item: StoredFoodItem) => void;
 }
 
 // 냉동 칸과 냉장 칸을 공통으로 표현하는 보관 칸 컴포넌트입니다.
-// 아직 추가/이동 기능은 없고, 전달받은 식재료 목록을 화면에 표시하는 역할만 합니다.
-export function StorageZone({ title, items }: StorageZoneProps) {
+// 6단계에서는 전달받은 식재료 목록을 보여주고, 각 항목을 삭제할 수 있게 합니다.
+export function StorageZone({ title, items, onDeleteItem }: StorageZoneProps) {
   const hasItems = items.length > 0;
 
   return (
@@ -20,8 +21,16 @@ export function StorageZone({ title, items }: StorageZoneProps) {
             {items.map((item) => (
               <div
                 key={item.uniqueId}
-                className="flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg bg-white border-2 border-sky-200"
+                className="relative flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg bg-white border-2 border-sky-200"
               >
+                <button
+                  type="button"
+                  onClick={() => onDeleteItem(item)}
+                  className="absolute right-1 top-1 w-5 h-5 rounded-full border border-red-300 bg-white text-[10px] font-bold text-red-500 hover:bg-red-50 transition-colors"
+                  aria-label={`${item.name} 삭제`}
+                >
+                  ×
+                </button>
                 <span className="text-xl">{item.emoji}</span>
                 <span className="text-[9px] font-medium text-gray-700">{item.name}</span>
               </div>

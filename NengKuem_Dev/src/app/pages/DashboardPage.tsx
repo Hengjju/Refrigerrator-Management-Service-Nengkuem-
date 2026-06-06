@@ -5,8 +5,8 @@ import { StorageZone } from '../components/fridge/StorageZone';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 
-// 5단계 메인 화면입니다.
-// 사용자가 냉장/냉동 보관 위치를 고른 뒤 식재료를 클릭해서 해당 칸에 추가합니다.
+// 6단계 메인 화면입니다.
+// 보관 위치를 선택해 식재료를 추가하고, 추가된 식재료를 다시 삭제할 수 있습니다.
 export function DashboardPage() {
   const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
@@ -25,6 +25,19 @@ export function DashboardPage() {
     }
 
     setFridgeItems((prevItems) => [...prevItems, newItem]);
+  };
+
+  const handleDeleteItem = (itemToDelete: StoredFoodItem) => {
+    if (itemToDelete.section === 'freezer') {
+      setFreezerItems((prevItems) =>
+        prevItems.filter((item) => item.uniqueId !== itemToDelete.uniqueId),
+      );
+      return;
+    }
+
+    setFridgeItems((prevItems) =>
+      prevItems.filter((item) => item.uniqueId !== itemToDelete.uniqueId),
+    );
   };
 
   return (
@@ -100,8 +113,18 @@ export function DashboardPage() {
             </aside>
 
             <section className="flex-1 min-h-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-xl shadow-2xl p-4 md:p-6 border-2 border-gray-300 h-full flex flex-col gap-3 md:gap-4">
-              <StorageZone section="freezer" title="냉동 칸" items={freezerItems} />
-              <StorageZone section="fridge" title="냉장 칸" items={fridgeItems} />
+              <StorageZone
+                section="freezer"
+                title="냉동 칸"
+                items={freezerItems}
+                onDeleteItem={handleDeleteItem}
+              />
+              <StorageZone
+                section="fridge"
+                title="냉장 칸"
+                items={fridgeItems}
+                onDeleteItem={handleDeleteItem}
+              />
             </section>
           </div>
         </main>
