@@ -3,20 +3,26 @@
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { StorageZone } from '../components/fridge/StorageZone';
 import type { FoodItem } from '../types/food';
-import type { StoredFoodItem } from '../types/ingredient';
+import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 
-// 4단계 메인 화면입니다.
-// 왼쪽 식재료를 클릭하면 냉장 칸에 추가되는 가장 기본적인 기능을 연결합니다.
+// 5단계 메인 화면입니다.
+// 사용자가 냉장/냉동 보관 위치를 고른 뒤 식재료를 클릭해서 해당 칸에 추가합니다.
 export function DashboardPage() {
-  const freezerItems: StoredFoodItem[] = [];
+  const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
+  const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
 
-  const handleAddToFridge = (food: FoodItem) => {
+  const handleAddItem = (food: FoodItem) => {
     const newItem: StoredFoodItem = {
       ...food,
-      uniqueId: `${food.id}-${Date.now()}`,
-      section: 'fridge',
+      uniqueId: `${selectedSection}-${food.id}-${Date.now()}`,
+      section: selectedSection,
     };
+
+    if (selectedSection === 'freezer') {
+      setFreezerItems((prevItems) => [...prevItems, newItem]);
+      return;
+    }
 
     setFridgeItems((prevItems) => [...prevItems, newItem]);
   };
@@ -48,6 +54,32 @@ export function DashboardPage() {
             <aside className="w-[100px] md:w-[112px] flex-shrink-0">
               <div className="bg-white rounded-xl shadow-lg p-2 border-2 border-sky-200 h-full flex flex-col">
                 <div className="mb-2 text-center text-xs font-bold text-sky-600">식재료</div>
+
+                <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-sky-50 p-1 border border-sky-200">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSection('fridge')}
+                    className={`rounded-md px-1 py-1 text-[10px] font-bold transition-colors ${
+                      selectedSection === 'fridge'
+                        ? 'bg-white text-sky-700 shadow-sm'
+                        : 'text-sky-500 hover:text-sky-700'
+                    }`}
+                  >
+                    냉장
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSection('freezer')}
+                    className={`rounded-md px-1 py-1 text-[10px] font-bold transition-colors ${
+                      selectedSection === 'freezer'
+                        ? 'bg-white text-sky-700 shadow-sm'
+                        : 'text-sky-500 hover:text-sky-700'
+                    }`}
+                  >
+                    냉동
+                  </button>
+                </div>
+
                 <div
                   className="grid grid-cols-1 gap-1.5 overflow-y-auto flex-1 scrollbar-hide"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
@@ -56,7 +88,7 @@ export function DashboardPage() {
                     <button
                       key={food.id}
                       type="button"
-                      onClick={() => handleAddToFridge(food)}
+                      onClick={() => handleAddItem(food)}
                       className="flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg bg-white border-2 border-sky-200 hover:border-sky-400 hover:shadow-md transition-all"
                     >
                       <span className="text-xl">{food.emoji}</span>
