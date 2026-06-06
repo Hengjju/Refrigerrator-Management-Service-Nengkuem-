@@ -3,14 +3,24 @@
 interface ItemEditPanelProps {
   item: StoredFoodItem;
   nameValue: string;
+  expiryDateValue: string;
   onNameChange: (name: string) => void;
+  onExpiryDateChange: (expiryDate: string) => void;
   onSave: () => void;
   onClose: () => void;
 }
 
-// 식재료 카드 클릭 시 열리는 간단한 이름 수정 패널입니다.
-// 이후 단계에서 메모, 유통기한을 포함한 상세 모달로 확장할 수 있습니다.
-export function ItemEditPanel({ item, nameValue, onNameChange, onSave, onClose }: ItemEditPanelProps) {
+// 식재료 카드 클릭 시 열리는 간단한 상세 수정 패널입니다.
+// 이름과 유통기한을 수정할 수 있고, 이후 단계에서 메모/삭제 기능까지 확장합니다.
+export function ItemEditPanel({
+  item,
+  nameValue,
+  expiryDateValue,
+  onNameChange,
+  onExpiryDateChange,
+  onSave,
+  onClose,
+}: ItemEditPanelProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
@@ -19,21 +29,38 @@ export function ItemEditPanel({ item, nameValue, onNameChange, onSave, onClose }
       >
         <div className="mb-4 flex flex-col items-center gap-2 border-b border-sky-100 pb-4">
           <span className="text-5xl">{item.emoji}</span>
-          <h3 className="text-lg font-bold text-sky-700">식재료 이름 수정</h3>
+          <h3 className="text-lg font-bold text-sky-700">식재료 상세 수정</h3>
         </div>
 
-        <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="item-name-input">
-          표시 이름
-        </label>
-        <input
-          id="item-name-input"
-          type="text"
-          value={nameValue}
-          onChange={(event) => onNameChange(event.target.value)}
-          className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
-          placeholder={item.name}
-          autoFocus
-        />
+        <div className="space-y-4">
+          <div>
+            <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="item-name-input">
+              표시 이름
+            </label>
+            <input
+              id="item-name-input"
+              type="text"
+              value={nameValue}
+              onChange={(event) => onNameChange(event.target.value)}
+              className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+              placeholder={item.name}
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="item-expiry-input">
+              유통기한
+            </label>
+            <input
+              id="item-expiry-input"
+              type="date"
+              value={expiryDateValue}
+              onChange={(event) => onExpiryDateChange(event.target.value)}
+              className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+            />
+          </div>
+        </div>
 
         <div className="mt-5 flex gap-2">
           <button

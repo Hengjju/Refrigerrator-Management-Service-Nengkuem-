@@ -6,14 +6,15 @@ import { StorageZone } from '../components/fridge/StorageZone';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 
-// 7단계 메인 화면입니다.
-// 식재료 추가/삭제에 더해, 보관된 식재료의 표시 이름을 수정할 수 있습니다.
+// 8단계 메인 화면입니다.
+// 식재료 추가/삭제/이름 수정에 더해, 상세 패널에서 유통기한을 입력할 수 있습니다.
 export function DashboardPage() {
   const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [editingExpiryDate, setEditingExpiryDate] = useState('');
 
   const handleAddItem = (food: FoodItem) => {
     const newItem: StoredFoodItem = {
@@ -33,21 +34,24 @@ export function DashboardPage() {
   const handleSelectItem = (item: StoredFoodItem) => {
     setSelectedItem(item);
     setEditingName(item.customName || item.name);
+    setEditingExpiryDate(item.expiryDate || '');
   };
 
   const handleCloseEditPanel = () => {
     setSelectedItem(null);
     setEditingName('');
+    setEditingExpiryDate('');
   };
 
-  const handleSaveItemName = () => {
+  const handleSaveItemDetail = () => {
     if (!selectedItem) return;
 
     const nextName = editingName.trim() || selectedItem.name;
+    const nextExpiryDate = editingExpiryDate || undefined;
     const updateItems = (items: StoredFoodItem[]) =>
       items.map((item) =>
         item.uniqueId === selectedItem.uniqueId
-          ? { ...item, customName: nextName }
+          ? { ...item, customName: nextName, expiryDate: nextExpiryDate }
           : item,
       );
 
@@ -177,8 +181,10 @@ export function DashboardPage() {
         <ItemEditPanel
           item={selectedItem}
           nameValue={editingName}
+          expiryDateValue={editingExpiryDate}
           onNameChange={setEditingName}
-          onSave={handleSaveItemName}
+          onExpiryDateChange={setEditingExpiryDate}
+          onSave={handleSaveItemDetail}
           onClose={handleCloseEditPanel}
         />
       )}
