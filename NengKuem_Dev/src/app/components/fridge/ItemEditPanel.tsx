@@ -4,20 +4,24 @@ interface ItemEditPanelProps {
   item: StoredFoodItem;
   nameValue: string;
   expiryDateValue: string;
+  memoValue: string;
   onNameChange: (name: string) => void;
   onExpiryDateChange: (expiryDate: string) => void;
+  onMemoChange: (memo: string) => void;
   onSave: () => void;
   onClose: () => void;
 }
 
 // 식재료 카드 클릭 시 열리는 간단한 상세 수정 패널입니다.
-// 이름과 유통기한을 수정할 수 있고, 이후 단계에서 메모/삭제 기능까지 확장합니다.
+// 이름, 유통기한, 메모를 수정할 수 있고 이후 단계에서 삭제 기능까지 확장합니다.
 export function ItemEditPanel({
   item,
   nameValue,
   expiryDateValue,
+  memoValue,
   onNameChange,
   onExpiryDateChange,
+  onMemoChange,
   onSave,
   onClose,
 }: ItemEditPanelProps) {
@@ -58,6 +62,19 @@ export function ItemEditPanel({
               value={expiryDateValue}
               onChange={(event) => onExpiryDateChange(event.target.value)}
               className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="item-memo-input">
+              메모
+            </label>
+            <textarea
+              id="item-memo-input"
+              value={memoValue}
+              onChange={(event) => onMemoChange(event.target.value)}
+              className="h-24 w-full resize-none rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+              placeholder="보관 위치나 조리 계획을 적어보세요."
             />
           </div>
         </div>
