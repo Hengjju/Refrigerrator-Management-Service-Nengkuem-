@@ -42,37 +42,37 @@ export function DashboardPage() {
 
   return (
     <div
-      className="size-full bg-gradient-to-br from-sky-50 to-white p-4 md:p-8 overflow-hidden flex flex-col"
+      className="min-h-screen w-full overflow-auto bg-gradient-to-br from-sky-50 to-white p-3 sm:p-5 md:p-6 lg:p-8"
       style={{ fontFamily: "'Nanum Gothic', sans-serif" }}
     >
-      <div className="max-w-6xl mx-auto w-full flex-1 flex flex-col min-h-0">
-        <header className="flex items-center justify-between mb-4 md:mb-6 flex-shrink-0">
-          <div className="w-10 h-10 rounded-lg flex flex-col items-center justify-center gap-1.5">
-            <span className="block w-5 h-0.5 rounded-full bg-sky-600" />
-            <span className="block w-5 h-0.5 rounded-full bg-sky-600" />
-            <span className="block w-5 h-0.5 rounded-full bg-sky-600" />
+      <div className="mx-auto flex w-full max-w-[1320px] min-w-0 flex-col">
+        <header className="mb-4 flex flex-shrink-0 items-center justify-between md:mb-5">
+          <div className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg">
+            <span className="block h-0.5 w-5 rounded-full bg-sky-600" />
+            <span className="block h-0.5 w-5 rounded-full bg-sky-600" />
+            <span className="block h-0.5 w-5 rounded-full bg-sky-600" />
           </div>
 
           <h1 className="text-2xl font-bold text-sky-600" style={{ fontFamily: "'YeogiOttaeJalnan', cursive" }}>
             냉큼
           </h1>
 
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center">
-            <span className="block w-5 h-5 rounded-full border-2 border-sky-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg">
+            <span className="block h-5 w-5 rounded-full border-2 border-sky-600" />
           </div>
         </header>
 
-        <main className="flex-1 min-h-0 bg-sky-600 rounded-2xl shadow-xl border-2 border-sky-700 p-4 md:p-6">
-          <div className="flex gap-4 h-full">
-            <aside className="w-[100px] md:w-[112px] flex-shrink-0">
-              <div className="bg-white rounded-xl shadow-lg p-2 border-2 border-sky-200 h-full flex flex-col">
-                <div className="mb-2 text-center text-xs font-bold text-sky-600">식재료</div>
+        <main className="h-[calc(100vh-104px)] min-h-[560px] max-h-[680px] rounded-2xl border-2 border-sky-700 bg-sky-600 p-3 shadow-xl sm:p-4 md:p-5 lg:p-6">
+          <div className="grid h-full min-h-0 min-w-0 grid-cols-[clamp(108px,13vw,180px)_minmax(0,1fr)] gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+            <aside className="min-h-0 min-w-0">
+              <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white p-2 shadow-lg sm:p-3 md:p-4">
+                <div className="mb-2 text-center text-sm font-bold text-sky-600 sm:text-base md:mb-3 md:text-lg">식재료</div>
 
-                <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-sky-50 p-1 border border-sky-200">
+                <div className="mb-2 grid grid-cols-2 gap-1 rounded-xl border border-sky-200 bg-sky-50 p-1 md:mb-3">
                   <button
                     type="button"
                     onClick={() => setSelectedSection('fridge')}
-                    className={`rounded-md px-1 py-1 text-[10px] font-bold transition-colors ${
+                    className={`rounded-lg px-1 py-1.5 text-[10px] font-bold transition-colors sm:text-xs ${
                       selectedSection === 'fridge'
                         ? 'bg-white text-sky-700 shadow-sm'
                         : 'text-sky-500 hover:text-sky-700'
@@ -83,7 +83,7 @@ export function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedSection('freezer')}
-                    className={`rounded-md px-1 py-1 text-[10px] font-bold transition-colors ${
+                    className={`rounded-lg px-1 py-1.5 text-[10px] font-bold transition-colors sm:text-xs ${
                       selectedSection === 'freezer'
                         ? 'bg-white text-sky-700 shadow-sm'
                         : 'text-sky-500 hover:text-sky-700'
@@ -94,7 +94,7 @@ export function DashboardPage() {
                 </div>
 
                 <div
-                  className="grid grid-cols-1 gap-1.5 overflow-y-auto flex-1 scrollbar-hide"
+                  className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto pr-0.5 scrollbar-hide sm:gap-3 sm:pr-1"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {AVAILABLE_FOODS.map((food) => (
@@ -102,29 +102,31 @@ export function DashboardPage() {
                       key={food.id}
                       type="button"
                       onClick={() => handleAddItem(food)}
-                      className="flex flex-col items-center justify-center gap-0.5 p-2 rounded-lg bg-white border-2 border-sky-200 hover:border-sky-400 hover:shadow-md transition-all"
+                      className="flex min-h-[76px] flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[92px] md:min-h-[104px] md:p-2"
                     >
-                      <span className="text-xl">{food.emoji}</span>
-                      <span className="text-[9px] font-medium text-gray-700">{food.name}</span>
+                      <span className="text-xl sm:text-2xl md:text-3xl">{food.emoji}</span>
+                      <span className="text-[10px] font-medium text-gray-700 sm:text-xs">{food.name}</span>
                     </button>
                   ))}
                 </div>
               </div>
             </aside>
 
-            <section className="flex-1 min-h-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-xl shadow-2xl p-4 md:p-6 border-2 border-gray-300 h-full flex flex-col gap-3 md:gap-4">
-              <StorageZone
-                section="freezer"
-                title="냉동 칸"
-                items={freezerItems}
-                onDeleteItem={handleDeleteItem}
-              />
-              <StorageZone
-                section="fridge"
-                title="냉장 칸"
-                items={fridgeItems}
-                onDeleteItem={handleDeleteItem}
-              />
+            <section className="min-h-0 min-w-0 overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-3 shadow-2xl sm:p-4 md:p-5 lg:p-6">
+              <div className="flex h-full min-h-0 flex-col gap-3 sm:gap-4 md:gap-5">
+                <StorageZone
+                  section="freezer"
+                  title="냉동 칸"
+                  items={freezerItems}
+                  onDeleteItem={handleDeleteItem}
+                />
+                <StorageZone
+                  section="fridge"
+                  title="냉장 칸"
+                  items={fridgeItems}
+                  onDeleteItem={handleDeleteItem}
+                />
+              </div>
             </section>
           </div>
         </main>
