@@ -4,12 +4,14 @@ interface StorageZoneProps {
   section: StorageSection;
   title: string;
   items: StoredFoodItem[];
+  selectedItemId?: string | null;
+  onSelectItem: (item: StoredFoodItem) => void;
   onDeleteItem: (item: StoredFoodItem) => void;
 }
 
 // 냉동 칸과 냉장 칸을 공통으로 표현하는 보관 칸 컴포넌트입니다.
-// 6단계에서는 전달받은 식재료 목록을 보여주고, 각 항목을 삭제할 수 있게 합니다.
-export function StorageZone({ title, items, onDeleteItem }: StorageZoneProps) {
+// 7단계에서는 식재료 카드를 클릭해 이름 수정 패널을 열 수 있습니다.
+export function StorageZone({ title, items, selectedItemId, onSelectItem, onDeleteItem }: StorageZoneProps) {
   const hasItems = items.length > 0;
 
   return (
@@ -18,23 +20,42 @@ export function StorageZone({ title, items, onDeleteItem }: StorageZoneProps) {
       <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border-2 border-dashed border-sky-200 bg-white/70 p-3 sm:p-4">
         {hasItems ? (
           <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {items.map((item) => (
-              <div
-                key={item.uniqueId}
-                className="relative flex min-h-[76px] flex-col items-center justify-center gap-1 rounded-lg border-2 border-sky-200 bg-white p-2 sm:min-h-[86px]"
-              >
-                <button
-                  type="button"
-                  onClick={() => onDeleteItem(item)}
-                  className="absolute right-1 top-1 h-5 w-5 rounded-full border border-red-300 bg-white text-[10px] font-bold text-red-500 transition-colors hover:bg-red-50"
-                  aria-label={`${item.name} 삭제`}
+            {items.map((item) => {
+              const displayName = item.customName || item.name;
+              const isSelected = selectedItemId === item.uniqueId;
+
+              return (
+                <div
+                  key={item.uniqueId}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelectItem(item)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      onSelectItem(item);
+                    }
+                  }}
+                  className={`relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 bg-white p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[86px] ${
+                    isSelected ? 'border-sky-500 shadow-md' : 'border-sky-200'
+                  }`}
                 >
-                  ×
-                </button>
-                <span className="text-xl sm:text-2xl">{item.emoji}</span>
-                <span className="text-[10px] font-medium text-gray-700 sm:text-[11px]">{item.name}</span>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDeleteItem(item);
+                    }}
+                    className="absolute right-1 top-1 h-5 w-5 rounded-full border border-red-300 bg-white text-[10px] font-bold text-red-500 transition-colors hover:bg-red-50"
+                    aria-label={`${displayName} 삭제`}
+                  >
+                    ×
+                  </button>
+                  <span className="text-xl sm:text-2xl">{item.emoji}</span>
+                  <span className="max-w-full truncate text-[10px] font-medium text-gray-700 sm:text-[11px]">{displayName}</span>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-center">

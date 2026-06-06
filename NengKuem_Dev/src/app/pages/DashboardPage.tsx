@@ -1,16 +1,19 @@
 ﻿import { useState } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
+import { ItemEditPanel } from '../components/fridge/ItemEditPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 
-// 6단계 메인 화면입니다.
-// 보관 위치를 선택해 식재료를 추가하고, 추가된 식재료를 다시 삭제할 수 있습니다.
+// 7단계 메인 화면입니다.
+// 식재료 추가/삭제에 더해, 보관된 식재료의 표시 이름을 수정할 수 있습니다.
 export function DashboardPage() {
   const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   const handleAddItem = (food: FoodItem) => {
     const newItem: StoredFoodItem = {
@@ -27,7 +30,41 @@ export function DashboardPage() {
     setFridgeItems((prevItems) => [...prevItems, newItem]);
   };
 
+  const handleSelectItem = (item: StoredFoodItem) => {
+    setSelectedItem(item);
+    setEditingName(item.customName || item.name);
+  };
+
+  const handleCloseEditPanel = () => {
+    setSelectedItem(null);
+    setEditingName('');
+  };
+
+  const handleSaveItemName = () => {
+    if (!selectedItem) return;
+
+    const nextName = editingName.trim() || selectedItem.name;
+    const updateItems = (items: StoredFoodItem[]) =>
+      items.map((item) =>
+        item.uniqueId === selectedItem.uniqueId
+          ? { ...item, customName: nextName }
+          : item,
+      );
+
+    if (selectedItem.section === 'freezer') {
+      setFreezerItems(updateItems);
+    } else {
+      setFridgeItems(updateItems);
+    }
+
+    handleCloseEditPanel();
+  };
+
   const handleDeleteItem = (itemToDelete: StoredFoodItem) => {
+    if (selectedItem?.uniqueId === itemToDelete.uniqueId) {
+      handleCloseEditPanel();
+    }
+
     if (itemToDelete.section === 'freezer') {
       setFreezerItems((prevItems) =>
         prevItems.filter((item) => item.uniqueId !== itemToDelete.uniqueId),
@@ -118,12 +155,16 @@ export function DashboardPage() {
                   section="freezer"
                   title="냉동 칸"
                   items={freezerItems}
+                  selectedItemId={selectedItem?.uniqueId}
+                  onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />
                 <StorageZone
                   section="fridge"
                   title="냉장 칸"
                   items={fridgeItems}
+                  selectedItemId={selectedItem?.uniqueId}
+                  onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />
               </div>
@@ -131,6 +172,16 @@ export function DashboardPage() {
           </div>
         </main>
       </div>
+
+      {selectedItem && (
+        <ItemEditPanel
+          item={selectedItem}
+          nameValue={editingName}
+          onNameChange={setEditingName}
+          onSave={handleSaveItemName}
+          onClose={handleCloseEditPanel}
+        />
+      )}
     </div>
   );
 }

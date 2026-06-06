@@ -1,0 +1,57 @@
+﻿import type { StoredFoodItem } from '../../types/ingredient';
+
+interface ItemEditPanelProps {
+  item: StoredFoodItem;
+  nameValue: string;
+  onNameChange: (name: string) => void;
+  onSave: () => void;
+  onClose: () => void;
+}
+
+// 식재료 카드 클릭 시 열리는 간단한 이름 수정 패널입니다.
+// 이후 단계에서 메모, 유통기한을 포함한 상세 모달로 확장할 수 있습니다.
+export function ItemEditPanel({ item, nameValue, onNameChange, onSave, onClose }: ItemEditPanelProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-sm rounded-2xl border-2 border-sky-300 bg-white p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4 flex flex-col items-center gap-2 border-b border-sky-100 pb-4">
+          <span className="text-5xl">{item.emoji}</span>
+          <h3 className="text-lg font-bold text-sky-700">식재료 이름 수정</h3>
+        </div>
+
+        <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="item-name-input">
+          표시 이름
+        </label>
+        <input
+          id="item-name-input"
+          type="text"
+          value={nameValue}
+          onChange={(event) => onNameChange(event.target.value)}
+          className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+          placeholder={item.name}
+          autoFocus
+        />
+
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-lg border-2 border-gray-400 bg-white py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-gray-50"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="flex-1 rounded-lg border-2 border-sky-500 bg-white py-2 text-sm font-bold text-sky-600 transition-colors hover:bg-sky-50"
+          >
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
