@@ -14,6 +14,7 @@ const emptyDetailForm: ItemDetailFormValues = {
 };
 
 type ExpiryFilter = 'all' | 'fresh' | 'today' | 'expired' | 'none';
+type ExpirySort = 'default' | 'near' | 'far';
 
 const EXPIRY_FILTER_OPTIONS: { value: ExpiryFilter; label: string }[] = [
   { value: 'all', label: '전체' },
@@ -23,29 +24,69 @@ const EXPIRY_FILTER_OPTIONS: { value: ExpiryFilter; label: string }[] = [
   { value: 'none', label: '미입력' },
 ];
 
+const EXPIRY_SORT_OPTIONS: { value: ExpirySort; label: string }[] = [
+  { value: 'default', label: '기본순' },
+  { value: 'near', label: '가까운 순' },
+  { value: 'far', label: '먼 순' },
+];
+
 function matchesExpiryFilter(item: StoredFoodItem, filter: ExpiryFilter) {
   if (filter === 'all') return true;
 
   const ddayInfo = getExpiryDdayInfo(item.expiryDate);
 
   if (filter === 'none') return !ddayInfo;
-  if (filter === 'fresh') return ddayInfo?.status === 'urgent' || ddayInfo?.status === 'soon' || ddayInfo?.status === 'plenty';
+  if (filter === 'fresh') {
+    return ddayInfo?.status === 'urgent' || ddayInfo?.status === 'soon' || ddayInfo?.status === 'plenty';
+  }
 
   return ddayInfo?.status === filter;
 }
 
+function getExpirySortValue(item: StoredFoodItem) {
+  if (!item.expiryDate) return null;
+
+  const sortValue = new Date(`${item.expiryDate}T00:00:00`).getTime();
+
+  return Number.isNaN(sortValue) ? null : sortValue;
+}
+
+function sortItemsByExpiry(items: StoredFoodItem[], sort: ExpirySort) {
+  if (sort === 'default') return items;
+
+  return [...items].sort((firstItem, secondItem) => {
+    const firstDate = getExpirySortValue(firstItem);
+    const secondDate = getExpirySortValue(secondItem);
+
+    if (firstDate === null && secondDate === null) return 0;
+    if (firstDate === null) return 1;
+    if (secondDate === null) return -1;
+
+    return sort === 'near' ? firstDate - secondDate : secondDate - firstDate;
+  });
+}
+
 // 메인 냉장고 화면입니다.
-// 식재료 추가, 상세 정보 수정, 삭제, 유통기한 상태 필터를 한 화면에서 관리합니다.
+// 식재료 추가, 상세 정보 수정, 삭제, 유통기한 상태 필터와 정렬을 한 화면에서 관리합니다.
 export function DashboardPage() {
   const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all');
+  const [expirySort, setExpirySort] = useState<ExpirySort>('default');
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
   const [detailForm, setDetailForm] = useState<ItemDetailFormValues>(emptyDetailForm);
 
-  const filteredFreezerItems = freezerItems.filter((item) => matchesExpiryFilter(item, expiryFilter));
-  const filteredFridgeItems = fridgeItems.filter((item) => matchesExpiryFilter(item, expiryFilter));
+  const activeSortLabel = EXPIRY_SORT_OPTIONS.find((option) => option.value === expirySort)?.label || '기본순';
+  const filteredFreezerItems = sortItemsByExpiry(
+    freezerItems.filter((item) => matchesExpiryFilter(item, expiryFilter)),
+    expirySort,
+  );
+  const filteredFridgeItems = sortItemsByExpiry(
+    fridgeItems.filter((item) => matchesExpiryFilter(item, expiryFilter)),
+    expirySort,
+  );
   const emptyStorageMessage = expiryFilter === 'all' ? '아직 등록된 식재료가 없습니다.' : '조건에 맞는 식재료가 없습니다.';
 
   const handleAddItem = (food: FoodItem) => {
@@ -79,10 +120,16 @@ export function DashboardPage() {
 
   const handleChangeExpiryFilter = (nextFilter: ExpiryFilter) => {
     setExpiryFilter(nextFilter);
+    setIsSortMenuOpen(false);
 
     if (selectedItem && !matchesExpiryFilter(selectedItem, nextFilter)) {
       handleCloseDetailPanel();
     }
+  };
+
+  const handleChangeExpirySort = (nextSort: ExpirySort) => {
+    setExpirySort(nextSort);
+    setIsSortMenuOpen(false);
   };
 
   const handleSaveItemDetail = () => {
@@ -198,25 +245,63 @@ export function DashboardPage() {
 
             <section className="min-h-0 min-w-0 overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-3 shadow-2xl sm:p-4 md:p-5 lg:p-6">
               <div className="flex h-full min-h-0 flex-col gap-3 sm:gap-4 md:gap-5">
-                <div className="flex flex-shrink-0 flex-wrap items-center justify-center gap-1 rounded-xl border border-sky-200 bg-white/80 p-1 shadow-sm sm:gap-1.5 sm:p-1.5">
-                  {EXPIRY_FILTER_OPTIONS.map((option) => {
-                    const isActive = expiryFilter === option.value;
+                <div className="relative flex flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-200 bg-white/80 p-1.5 shadow-sm">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-1 sm:justify-start sm:gap-1.5">
+                    {EXPIRY_FILTER_OPTIONS.map((option) => {
+                      const isActive = expiryFilter === option.value;
 
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => handleChangeExpiryFilter(option.value)}
-                        className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors sm:px-3 sm:text-xs ${
-                          isActive
-                            ? 'bg-sky-600 text-white shadow-sm'
-                            : 'text-sky-600 hover:bg-sky-50 hover:text-sky-700'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleChangeExpiryFilter(option.value)}
+                          className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors sm:px-3 sm:text-xs ${
+                            isActive
+                              ? 'bg-sky-600 text-white shadow-sm'
+                              : 'text-sky-600 hover:bg-sky-50 hover:text-sky-700'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="relative flex flex-shrink-0 items-center gap-1">
+                    <span className="text-[10px] font-bold text-gray-500 sm:text-xs">정렬</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSortMenuOpen((prevOpen) => !prevOpen)}
+                      className="flex min-w-[82px] items-center justify-between gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100 sm:min-w-[94px] sm:px-3 sm:text-xs"
+                      aria-expanded={isSortMenuOpen}
+                    >
+                      <span>{activeSortLabel}</span>
+                      <span className={`transition-transform ${isSortMenuOpen ? 'rotate-180' : ''}`}>▾</span>
+                    </button>
+
+                    {isSortMenuOpen && (
+                      <div className="absolute right-0 top-full z-20 mt-1 w-28 overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-lg">
+                        {EXPIRY_SORT_OPTIONS.map((option) => {
+                          const isActive = expirySort === option.value;
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => handleChangeExpirySort(option.value)}
+                              className={`block w-full px-3 py-2 text-left text-[10px] font-bold transition-colors sm:text-xs ${
+                                isActive
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'text-emerald-700 hover:bg-emerald-50'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <StorageZone
