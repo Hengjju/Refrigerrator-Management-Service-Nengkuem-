@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type DragEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
@@ -66,6 +66,14 @@ function sortItemsByExpiry(items: StoredFoodItem[], sort: ExpirySort) {
   });
 }
 
+function createStoredItem(food: FoodItem, section: StorageSection): StoredFoodItem {
+  return {
+    ...food,
+    uniqueId: `${section}-${food.id}-${Date.now()}`,
+    section,
+  };
+}
+
 // 메인 냉장고 화면입니다.
 // 식재료 추가, 상세 정보 수정, 삭제, 유통기한 상태 필터와 정렬을 한 화면에서 관리합니다.
 export function DashboardPage() {
@@ -73,6 +81,7 @@ export function DashboardPage() {
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all');
   const [expirySort, setExpirySort] = useState<ExpirySort>('default');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [dragOverSection, setDragOverSection] = useState<StorageSection | null>(null);
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
@@ -89,19 +98,35 @@ export function DashboardPage() {
   );
   const emptyStorageMessage = expiryFilter === 'all' ? '아직 등록된 식재료가 없습니다.' : '조건에 맞는 식재료가 없습니다.';
 
-  const handleAddItem = (food: FoodItem) => {
-    const newItem: StoredFoodItem = {
-      ...food,
-      uniqueId: `${selectedSection}-${food.id}-${Date.now()}`,
-      section: selectedSection,
-    };
+  const addFoodToSection = (food: FoodItem, section: StorageSection) => {
+    const newItem = createStoredItem(food, section);
 
-    if (selectedSection === 'freezer') {
+    if (section === 'freezer') {
       setFreezerItems((prevItems) => [...prevItems, newItem]);
       return;
     }
 
     setFridgeItems((prevItems) => [...prevItems, newItem]);
+  };
+
+  const handleAddItem = (food: FoodItem) => {
+    addFoodToSection(food, selectedSection);
+  };
+
+  const handleFoodDragStart = (event: DragEvent<HTMLButtonElement>, food: FoodItem) => {
+    event.dataTransfer.effectAllowed = 'copy';
+    event.dataTransfer.setData('application/x-nengkuem-food-id', food.id);
+    event.dataTransfer.setData('text/plain', food.id);
+  };
+
+  const handleDropFood = (foodId: string, section: StorageSection) => {
+    const food = AVAILABLE_FOODS.find((availableFood) => availableFood.id === foodId);
+    setDragOverSection(null);
+
+    if (!food) return;
+
+    setSelectedSection(section);
+    addFoodToSection(food, section);
   };
 
   const handleSelectItem = (item: StoredFoodItem) => {
@@ -232,8 +257,11 @@ export function DashboardPage() {
                     <button
                       key={food.id}
                       type="button"
+                      draggable
                       onClick={() => handleAddItem(food)}
-                      className="flex min-h-[76px] flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[92px] md:min-h-[104px] md:p-2"
+                      onDragStart={(event) => handleFoodDragStart(event, food)}
+                      onDragEnd={() => setDragOverSection(null)}
+                      className="flex min-h-[76px] cursor-grab flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] md:min-h-[104px] md:p-2"
                     >
                       <span className="text-xl sm:text-2xl md:text-3xl">{food.emoji}</span>
                       <span className="text-[10px] font-medium text-gray-700 sm:text-xs">{food.name}</span>
@@ -310,6 +338,10 @@ export function DashboardPage() {
                   items={filteredFreezerItems}
                   selectedItemId={selectedItem?.uniqueId}
                   emptyMessage={emptyStorageMessage}
+                  isDragOver={dragOverSection === 'freezer'}
+                  onDragEnterSection={setDragOverSection}
+                  onDragLeaveSection={() => setDragOverSection(null)}
+                  onDropFood={handleDropFood}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />
@@ -319,6 +351,10 @@ export function DashboardPage() {
                   items={filteredFridgeItems}
                   selectedItemId={selectedItem?.uniqueId}
                   emptyMessage={emptyStorageMessage}
+                  isDragOver={dragOverSection === 'fridge'}
+                  onDragEnterSection={setDragOverSection}
+                  onDragLeaveSection={() => setDragOverSection(null)}
+                  onDropFood={handleDropFood}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />

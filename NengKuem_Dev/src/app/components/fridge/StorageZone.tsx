@@ -1,3 +1,5 @@
+import type { DragEvent } from 'react';
+
 import type { StoredFoodItem, StorageSection } from '../../types/ingredient';
 import { formatExpiryDate, getExpiryDdayInfo, type ExpiryStatus } from '../../utils/expiryStatus';
 
@@ -7,6 +9,10 @@ interface StorageZoneProps {
   items: StoredFoodItem[];
   selectedItemId?: string | null;
   emptyMessage?: string;
+  isDragOver?: boolean;
+  onDragEnterSection?: (section: StorageSection) => void;
+  onDragLeaveSection?: (section: StorageSection) => void;
+  onDropFood?: (foodId: string, section: StorageSection) => void;
   onSelectItem: (item: StoredFoodItem) => void;
   onDeleteItem: (item: StoredFoodItem) => void;
 }
@@ -40,21 +46,64 @@ function getStatusLabelClass(status: ExpiryStatus) {
 }
 
 // 냉동 칸과 냉장 칸을 공통으로 표현하는 보관 칸 컴포넌트입니다.
-// 저장된 유통기한이 있으면 식재료 카드에 날짜, D-day, 상태 색상을 함께 표시합니다.
+// 식재료 목록에서 끌어온 항목을 이 영역에 놓으면 해당 칸에 추가됩니다.
 export function StorageZone({
+  section,
   title,
   items,
   selectedItemId,
   emptyMessage = '아직 등록된 식재료가 없습니다.',
+  isDragOver = false,
+  onDragEnterSection,
+  onDragLeaveSection,
+  onDropFood,
   onSelectItem,
   onDeleteItem,
 }: StorageZoneProps) {
   const hasItems = items.length > 0;
 
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!onDropFood) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    onDragEnterSection?.(section);
+  };
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+
+    onDragLeaveSection?.(section);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    if (!onDropFood) return;
+
+    event.preventDefault();
+
+    const foodId = event.dataTransfer.getData('application/x-nengkuem-food-id') || event.dataTransfer.getData('text/plain');
+    onDragLeaveSection?.(section);
+
+    if (foodId) {
+      onDropFood(foodId, section);
+    }
+  };
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-xl border-2 border-sky-300 bg-sky-50 p-3 sm:p-4 md:p-5">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex min-h-0 flex-1 flex-col rounded-xl border-2 p-3 transition-all sm:p-4 md:p-5 ${
+        isDragOver ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_0_3px_rgba(52,211,153,0.35)]' : 'border-sky-300 bg-sky-50'
+      }`}
+    >
       <h2 className="mb-3 flex-shrink-0 text-center text-xl font-bold text-sky-600 sm:text-2xl md:mb-4 md:text-3xl">{title}</h2>
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border-2 border-dashed border-sky-200 bg-white/70 p-3 sm:p-4">
+      <div
+        className={`min-h-0 flex-1 overflow-y-auto rounded-xl border-2 border-dashed p-3 transition-colors sm:p-4 ${
+          isDragOver ? 'border-emerald-300 bg-emerald-50/80' : 'border-sky-200 bg-white/70'
+        }`}
+      >
         {hasItems ? (
           <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
             {items.map((item) => {
