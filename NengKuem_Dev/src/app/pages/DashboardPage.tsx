@@ -123,6 +123,29 @@ export function DashboardPage() {
     addFoodToSection(food, section);
   };
 
+  const handleMoveStoredItem = (itemId: string, targetSection: StorageSection) => {
+    const itemToMove = [...freezerItems, ...fridgeItems].find((item) => item.uniqueId === itemId);
+    setDragOverSection(null);
+
+    if (!itemToMove || itemToMove.section === targetSection) return;
+
+    const movedItem: StoredFoodItem = { ...itemToMove, section: targetSection };
+
+    if (itemToMove.section === 'freezer') {
+      setFreezerItems((prevItems) => prevItems.filter((item) => item.uniqueId !== itemId));
+    } else {
+      setFridgeItems((prevItems) => prevItems.filter((item) => item.uniqueId !== itemId));
+    }
+
+    if (targetSection === 'freezer') {
+      setFreezerItems((prevItems) => [...prevItems, movedItem]);
+    } else {
+      setFridgeItems((prevItems) => [...prevItems, movedItem]);
+    }
+
+    setSelectedItem((prevItem) => (prevItem?.uniqueId === itemId ? movedItem : prevItem));
+  };
+
   const handleSelectItem = (item: StoredFoodItem) => {
     setSelectedItem(item);
     setDetailForm({
@@ -311,6 +334,7 @@ export function DashboardPage() {
                   onDragEnterSection={setDragOverSection}
                   onDragLeaveSection={() => setDragOverSection(null)}
                   onDropFood={handleDropFood}
+                  onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />
@@ -324,6 +348,7 @@ export function DashboardPage() {
                   onDragEnterSection={setDragOverSection}
                   onDragLeaveSection={() => setDragOverSection(null)}
                   onDropFood={handleDropFood}
+                  onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />

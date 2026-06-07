@@ -3,6 +3,9 @@ import type { DragEvent } from 'react';
 import type { StoredFoodItem, StorageSection } from '../../types/ingredient';
 import { formatExpiryDate, getExpiryDdayInfo, type ExpiryStatus } from '../../utils/expiryStatus';
 
+const FOOD_DRAG_TYPE = 'application/x-nengkuem-food-id';
+const STORED_ITEM_DRAG_TYPE = 'application/x-nengkuem-stored-item-id';
+
 interface StorageZoneProps {
   section: StorageSection;
   title: string;
@@ -13,6 +16,7 @@ interface StorageZoneProps {
   onDragEnterSection?: (section: StorageSection) => void;
   onDragLeaveSection?: (section: StorageSection) => void;
   onDropFood?: (foodId: string, section: StorageSection) => void;
+  onDropStoredItem?: (itemId: string, section: StorageSection) => void;
   onSelectItem: (item: StoredFoodItem) => void;
   onDeleteItem: (item: StoredFoodItem) => void;
 }
@@ -46,7 +50,7 @@ function getStatusLabelClass(status: ExpiryStatus) {
 }
 
 // 냉동 칸과 냉장 칸을 공통으로 표현하는 보관 칸 컴포넌트입니다.
-// 식재료 목록에서 끌어온 항목을 이 영역에 놓으면 해당 칸에 추가됩니다.
+// 왼쪽 식재료는 새로 추가하고, 이미 들어간 식재료는 다른 칸으로 이동할 수 있습니다.
 export function StorageZone({
   section,
   title,
@@ -57,16 +61,19 @@ export function StorageZone({
   onDragEnterSection,
   onDragLeaveSection,
   onDropFood,
+  onDropStoredItem,
   onSelectItem,
   onDeleteItem,
 }: StorageZoneProps) {
   const hasItems = items.length > 0;
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
-    if (!onDropFood) return;
+    if (!onDropFood && !onDropStoredItem) return;
 
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
+
+    const draggedTypes = Array.from(event.dataTransfer.types);
+    event.dataTransfer.dropEffect = draggedTypes.includes(STORED_ITEM_DRAG_TYPE) ? 'move' : 'copy';
     onDragEnterSection?.(section);
   };
 
@@ -77,16 +84,27 @@ export function StorageZone({
   };
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
-    if (!onDropFood) return;
+    if (!onDropFood && !onDropStoredItem) return;
 
     event.preventDefault();
 
-    const foodId = event.dataTransfer.getData('application/x-nengkuem-food-id') || event.dataTransfer.getData('text/plain');
+    const itemId = event.dataTransfer.getData(STORED_ITEM_DRAG_TYPE);
+    const foodId = event.dataTransfer.getData(FOOD_DRAG_TYPE) || event.dataTransfer.getData('text/plain');
     onDragLeaveSection?.(section);
 
-    if (foodId) {
-      onDropFood(foodId, section);
+    if (itemId) {
+      onDropStoredItem?.(itemId, section);
+      return;
     }
+
+    if (foodId) {
+      onDropFood?.(foodId, section);
+    }
+  };
+
+  const handleStoredItemDragStart = (event: DragEvent<HTMLDivElement>, item: StoredFoodItem) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData(STORED_ITEM_DRAG_TYPE, item.uniqueId);
   };
 
   return (
@@ -121,14 +139,18 @@ export function StorageZone({
                   key={item.uniqueId}
                   role="button"
                   tabIndex={0}
+                  draggable
                   onClick={() => onSelectItem(item)}
+                  onDragStart={(event) => handleStoredItemDragStart(event, item)}
+                  onDragEnd={() => onDragLeaveSection?.(section)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
                       onSelectItem(item);
                     }
                   }}
-                  className={`relative flex min-h-[112px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[120px] ${cardStateClass}`}
+                  className={`relative flex min-h-[112px] cursor-grab flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[120px] ${cardStateClass}`}
+                  aria-label={`${displayName} 선택 또는 다른 칸으로 이동`}
                 >
                   {ddayInfo && (
                     <span
