@@ -1,21 +1,25 @@
 ﻿import { useState } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
-import { ItemEditPanel } from '../components/fridge/ItemEditPanel';
+import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 
-// 10단계 메인 화면입니다.
-// 식재료 상세 패널에서 이름, 유통기한, 메모를 수정하고 삭제까지 할 수 있습니다.
+const emptyDetailForm: ItemDetailFormValues = {
+  name: '',
+  expiryDate: '',
+  memo: '',
+};
+
+// 11단계 메인 화면입니다.
+// 상세 패널의 입력값을 하나의 form state로 묶어 이후 기능 확장이 쉽도록 정리합니다.
 export function DashboardPage() {
   const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
-  const [editingName, setEditingName] = useState('');
-  const [editingExpiryDate, setEditingExpiryDate] = useState('');
-  const [editingMemo, setEditingMemo] = useState('');
+  const [detailForm, setDetailForm] = useState<ItemDetailFormValues>(emptyDetailForm);
 
   const handleAddItem = (food: FoodItem) => {
     const newItem: StoredFoodItem = {
@@ -34,24 +38,24 @@ export function DashboardPage() {
 
   const handleSelectItem = (item: StoredFoodItem) => {
     setSelectedItem(item);
-    setEditingName(item.customName || item.name);
-    setEditingExpiryDate(item.expiryDate || '');
-    setEditingMemo(item.memo || '');
+    setDetailForm({
+      name: item.customName || item.name,
+      expiryDate: item.expiryDate || '',
+      memo: item.memo || '',
+    });
   };
 
-  const handleCloseEditPanel = () => {
+  const handleCloseDetailPanel = () => {
     setSelectedItem(null);
-    setEditingName('');
-    setEditingExpiryDate('');
-    setEditingMemo('');
+    setDetailForm(emptyDetailForm);
   };
 
   const handleSaveItemDetail = () => {
     if (!selectedItem) return;
 
-    const nextName = editingName.trim() || selectedItem.name;
-    const nextExpiryDate = editingExpiryDate || undefined;
-    const nextMemo = editingMemo.trim() || undefined;
+    const nextName = detailForm.name.trim() || selectedItem.name;
+    const nextExpiryDate = detailForm.expiryDate || undefined;
+    const nextMemo = detailForm.memo.trim() || undefined;
     const updateItems = (items: StoredFoodItem[]) =>
       items.map((item) =>
         item.uniqueId === selectedItem.uniqueId
@@ -65,12 +69,12 @@ export function DashboardPage() {
       setFridgeItems(updateItems);
     }
 
-    handleCloseEditPanel();
+    handleCloseDetailPanel();
   };
 
   const handleDeleteItem = (itemToDelete: StoredFoodItem) => {
     if (selectedItem?.uniqueId === itemToDelete.uniqueId) {
-      handleCloseEditPanel();
+      handleCloseDetailPanel();
     }
 
     if (itemToDelete.section === 'freezer') {
@@ -182,21 +186,15 @@ export function DashboardPage() {
       </div>
 
       {selectedItem && (
-        <ItemEditPanel
+        <ItemDetailPanel
           item={selectedItem}
-          nameValue={editingName}
-          expiryDateValue={editingExpiryDate}
-          memoValue={editingMemo}
-          onNameChange={setEditingName}
-          onExpiryDateChange={setEditingExpiryDate}
-          onMemoChange={setEditingMemo}
+          values={detailForm}
+          onChange={setDetailForm}
           onSave={handleSaveItemDetail}
           onDelete={() => handleDeleteItem(selectedItem)}
-          onClose={handleCloseEditPanel}
+          onClose={handleCloseDetailPanel}
         />
       )}
     </div>
   );
 }
-
-

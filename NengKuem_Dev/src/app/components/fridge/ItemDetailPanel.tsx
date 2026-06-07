@@ -1,32 +1,23 @@
 ﻿import type { StoredFoodItem } from '../../types/ingredient';
 
-interface ItemEditPanelProps {
+export interface ItemDetailFormValues {
+  name: string;
+  expiryDate: string;
+  memo: string;
+}
+
+interface ItemDetailPanelProps {
   item: StoredFoodItem;
-  nameValue: string;
-  expiryDateValue: string;
-  memoValue: string;
-  onNameChange: (name: string) => void;
-  onExpiryDateChange: (expiryDate: string) => void;
-  onMemoChange: (memo: string) => void;
+  values: ItemDetailFormValues;
+  onChange: (values: ItemDetailFormValues) => void;
   onSave: () => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
-// 식재료 카드 클릭 시 열리는 간단한 상세 수정 패널입니다.
-// 이름, 유통기한, 메모를 수정하고 현재 식재료를 삭제할 수 있습니다.
-export function ItemEditPanel({
-  item,
-  nameValue,
-  expiryDateValue,
-  memoValue,
-  onNameChange,
-  onExpiryDateChange,
-  onMemoChange,
-  onSave,
-  onDelete,
-  onClose,
-}: ItemEditPanelProps) {
+// 식재료 카드 클릭 시 열리는 상세 수정 패널입니다.
+// 이름, 유통기한, 메모, 삭제처럼 한 식재료의 상세 관리 기능을 담당합니다.
+export function ItemDetailPanel({ item, values, onChange, onSave, onDelete, onClose }: ItemDetailPanelProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
@@ -46,8 +37,8 @@ export function ItemEditPanel({
             <input
               id="item-name-input"
               type="text"
-              value={nameValue}
-              onChange={(event) => onNameChange(event.target.value)}
+              value={values.name}
+              onChange={(event) => onChange({ ...values, name: event.target.value })}
               className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
               placeholder={item.name}
               autoFocus
@@ -61,8 +52,8 @@ export function ItemEditPanel({
             <input
               id="item-expiry-input"
               type="date"
-              value={expiryDateValue}
-              onChange={(event) => onExpiryDateChange(event.target.value)}
+              value={values.expiryDate}
+              onChange={(event) => onChange({ ...values, expiryDate: event.target.value })}
               className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
             />
           </div>
@@ -73,8 +64,8 @@ export function ItemEditPanel({
             </label>
             <textarea
               id="item-memo-input"
-              value={memoValue}
-              onChange={(event) => onMemoChange(event.target.value)}
+              value={values.memo}
+              onChange={(event) => onChange({ ...values, memo: event.target.value })}
               className="h-24 w-full resize-none rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
               placeholder="보관 위치나 조리 계획을 적어보세요."
             />
