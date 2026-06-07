@@ -9,8 +9,14 @@ interface StorageZoneProps {
   onDeleteItem: (item: StoredFoodItem) => void;
 }
 
+function formatExpiryDate(expiryDate?: string) {
+  if (!expiryDate) return null;
+
+  return expiryDate.replaceAll('-', '.');
+}
+
 // 냉동 칸과 냉장 칸을 공통으로 표현하는 보관 칸 컴포넌트입니다.
-// 7단계에서는 식재료 카드를 클릭해 이름 수정 패널을 열 수 있습니다.
+// 저장된 유통기한이 있으면 식재료 카드 아래에 날짜를 작게 표시합니다.
 export function StorageZone({ title, items, selectedItemId, onSelectItem, onDeleteItem }: StorageZoneProps) {
   const hasItems = items.length > 0;
 
@@ -22,6 +28,7 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
           <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4">
             {items.map((item) => {
               const displayName = item.customName || item.name;
+              const expiryDateLabel = formatExpiryDate(item.expiryDate);
               const isSelected = selectedItemId === item.uniqueId;
 
               return (
@@ -36,7 +43,7 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
                       onSelectItem(item);
                     }
                   }}
-                  className={`relative flex min-h-[76px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 bg-white p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[86px] ${
+                  className={`relative flex min-h-[92px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 bg-white p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[100px] ${
                     isSelected ? 'border-sky-500 shadow-md' : 'border-sky-200'
                   }`}
                 >
@@ -53,6 +60,11 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
                   </button>
                   <span className="text-xl sm:text-2xl">{item.emoji}</span>
                   <span className="max-w-full truncate text-[10px] font-medium text-gray-700 sm:text-[11px]">{displayName}</span>
+                  {expiryDateLabel && (
+                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[9px] font-bold text-sky-600">
+                      {expiryDateLabel}
+                    </span>
+                  )}
                 </div>
               );
             })}
