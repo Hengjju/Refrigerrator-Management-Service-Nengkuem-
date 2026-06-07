@@ -2,6 +2,13 @@
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
+type ExpiryStatus = 'fresh' | 'today' | 'expired';
+
+interface ExpiryDdayInfo {
+  label: string;
+  status: ExpiryStatus;
+}
+
 interface StorageZoneProps {
   section: StorageSection;
   title: string;
@@ -25,7 +32,7 @@ function getLocalDateStart(dateText: string) {
   return new Date(year, month - 1, day);
 }
 
-function getExpiryDdayLabel(expiryDate?: string) {
+function getExpiryDdayInfo(expiryDate?: string): ExpiryDdayInfo | null {
   if (!expiryDate) return null;
 
   const expiry = getLocalDateStart(expiryDate);
@@ -33,12 +40,24 @@ function getExpiryDdayLabel(expiryDate?: string) {
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const daysLeft = Math.round((expiry.getTime() - today.getTime()) / DAY_IN_MS);
+  const dayGap = Math.round((expiry.getTime() - today.getTime()) / DAY_IN_MS);
 
-  if (daysLeft < 0) return null;
-  if (daysLeft === 0) return 'D-day';
+  if (dayGap < 0) {
+    return { label: `D+${Math.abs(dayGap)}`, status: 'expired' };
+  }
 
-  return `D-${daysLeft}`;
+  if (dayGap === 0) {
+    return { label: 'D-day', status: 'today' };
+  }
+
+  return { label: `D-${dayGap}`, status: 'fresh' };
+}
+
+function getDdayBadgeClass(status: ExpiryStatus) {
+  if (status === 'expired') return 'border-red-200 bg-red-50 text-red-600';
+  if (status === 'today') return 'border-orange-200 bg-orange-50 text-orange-600';
+
+  return 'border-sky-200 bg-sky-50 text-sky-600';
 }
 
 // 냉동 칸과 냉장 칸을 공통으로 표현하는 보관 칸 컴포넌트입니다.
@@ -55,8 +74,15 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
             {items.map((item) => {
               const displayName = item.customName || item.name;
               const expiryDateLabel = formatExpiryDate(item.expiryDate);
-              const ddayLabel = getExpiryDdayLabel(item.expiryDate);
+              const ddayInfo = getExpiryDdayInfo(item.expiryDate);
+              const isExpired = ddayInfo?.status === 'expired';
               const isSelected = selectedItemId === item.uniqueId;
+              const cardStateClass = isSelected
+                ? 'border-sky-500 bg-white shadow-md'
+                : isExpired
+                  ? 'border-red-300 bg-red-50/70'
+                  : 'border-sky-200 bg-white';
+              const expiryDateClass = isExpired ? 'bg-red-50 text-red-600' : 'bg-sky-50 text-sky-600';
 
               return (
                 <div
@@ -70,19 +96,15 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
                       onSelectItem(item);
                     }
                   }}
-                  className={`relative flex min-h-[104px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 bg-white p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[112px] ${
-                    isSelected ? 'border-sky-500 shadow-md' : 'border-sky-200'
-                  }`}
+                  className={`relative flex min-h-[104px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[112px] ${cardStateClass}`}
                 >
-                  {ddayLabel && (
+                  {ddayInfo && (
                     <span
-                      className={`absolute left-1 top-1 rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${
-                        ddayLabel === 'D-day'
-                          ? 'border-orange-200 bg-orange-50 text-orange-600'
-                          : 'border-sky-200 bg-sky-50 text-sky-600'
-                      }`}
+                      className={`absolute left-1 top-1 rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${getDdayBadgeClass(
+                        ddayInfo.status,
+                      )}`}
                     >
-                      {ddayLabel}
+                      {ddayInfo.label}
                     </span>
                   )}
                   <button
@@ -99,7 +121,7 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
                   <span className="text-xl sm:text-2xl">{item.emoji}</span>
                   <span className="max-w-full truncate text-[10px] font-medium text-gray-700 sm:text-[11px]">{displayName}</span>
                   {expiryDateLabel && (
-                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[9px] font-bold text-sky-600">
+                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${expiryDateClass}`}>
                       {expiryDateLabel}
                     </span>
                   )}
