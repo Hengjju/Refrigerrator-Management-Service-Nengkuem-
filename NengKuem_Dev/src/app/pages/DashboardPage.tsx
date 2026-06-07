@@ -75,9 +75,8 @@ function createStoredItem(food: FoodItem, section: StorageSection): StoredFoodIt
 }
 
 // 메인 냉장고 화면입니다.
-// 식재료 추가, 상세 정보 수정, 삭제, 유통기한 상태 필터와 정렬을 한 화면에서 관리합니다.
+// 식재료를 원하는 칸에 드래그해서 추가하고, 상세 정보와 유통기한 표시를 관리합니다.
 export function DashboardPage() {
-  const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all');
   const [expirySort, setExpirySort] = useState<ExpirySort>('default');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -109,10 +108,6 @@ export function DashboardPage() {
     setFridgeItems((prevItems) => [...prevItems, newItem]);
   };
 
-  const handleAddItem = (food: FoodItem) => {
-    addFoodToSection(food, selectedSection);
-  };
-
   const handleFoodDragStart = (event: DragEvent<HTMLButtonElement>, food: FoodItem) => {
     event.dataTransfer.effectAllowed = 'copy';
     event.dataTransfer.setData('application/x-nengkuem-food-id', food.id);
@@ -125,7 +120,6 @@ export function DashboardPage() {
 
     if (!food) return;
 
-    setSelectedSection(section);
     addFoodToSection(food, section);
   };
 
@@ -222,32 +216,7 @@ export function DashboardPage() {
           <div className="grid h-full min-h-0 min-w-0 grid-cols-[clamp(108px,13vw,180px)_minmax(0,1fr)] gap-3 sm:gap-4 md:gap-5 lg:gap-6">
             <aside className="min-h-0 min-w-0">
               <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white p-2 shadow-lg sm:p-3 md:p-4">
-                <div className="mb-2 text-center text-sm font-bold text-sky-600 sm:text-base md:mb-3 md:text-lg">식재료</div>
-
-                <div className="mb-2 grid grid-cols-2 gap-1 rounded-xl border border-sky-200 bg-sky-50 p-1 md:mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSection('fridge')}
-                    className={`rounded-lg px-1 py-1.5 text-[10px] font-bold transition-colors sm:text-xs ${
-                      selectedSection === 'fridge'
-                        ? 'bg-white text-sky-700 shadow-sm'
-                        : 'text-sky-500 hover:text-sky-700'
-                    }`}
-                  >
-                    냉장
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSection('freezer')}
-                    className={`rounded-lg px-1 py-1.5 text-[10px] font-bold transition-colors sm:text-xs ${
-                      selectedSection === 'freezer'
-                        ? 'bg-white text-sky-700 shadow-sm'
-                        : 'text-sky-500 hover:text-sky-700'
-                    }`}
-                  >
-                    냉동
-                  </button>
-                </div>
+                <div className="mb-3 text-center text-sm font-bold text-sky-600 sm:text-base md:text-lg">식재료</div>
 
                 <div
                   className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto pr-0.5 scrollbar-hide sm:gap-3 sm:pr-1"
@@ -258,10 +227,10 @@ export function DashboardPage() {
                       key={food.id}
                       type="button"
                       draggable
-                      onClick={() => handleAddItem(food)}
                       onDragStart={(event) => handleFoodDragStart(event, food)}
                       onDragEnd={() => setDragOverSection(null)}
                       className="flex min-h-[76px] cursor-grab flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] md:min-h-[104px] md:p-2"
+                      aria-label={`${food.name} 드래그해서 추가`}
                     >
                       <span className="text-xl sm:text-2xl md:text-3xl">{food.emoji}</span>
                       <span className="text-[10px] font-medium text-gray-700 sm:text-xs">{food.name}</span>
