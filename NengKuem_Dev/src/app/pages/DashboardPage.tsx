@@ -1,10 +1,11 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
+import { getExpiryDdayInfo } from '../utils/expiryStatus';
 
 const emptyDetailForm: ItemDetailFormValues = {
   name: '',
@@ -12,14 +13,40 @@ const emptyDetailForm: ItemDetailFormValues = {
   memo: '',
 };
 
-// 11단계 메인 화면입니다.
-// 상세 패널의 입력값을 하나의 form state로 묶어 이후 기능 확장이 쉽도록 정리합니다.
+type ExpiryFilter = 'all' | 'fresh' | 'today' | 'expired' | 'none';
+
+const EXPIRY_FILTER_OPTIONS: { value: ExpiryFilter; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'fresh', label: '남음' },
+  { value: 'today', label: '오늘' },
+  { value: 'expired', label: '만료' },
+  { value: 'none', label: '미입력' },
+];
+
+function matchesExpiryFilter(item: StoredFoodItem, filter: ExpiryFilter) {
+  if (filter === 'all') return true;
+
+  const ddayInfo = getExpiryDdayInfo(item.expiryDate);
+
+  if (filter === 'none') return !ddayInfo;
+  if (filter === 'fresh') return ddayInfo?.status === 'urgent' || ddayInfo?.status === 'soon' || ddayInfo?.status === 'plenty';
+
+  return ddayInfo?.status === filter;
+}
+
+// 메인 냉장고 화면입니다.
+// 식재료 추가, 상세 정보 수정, 삭제, 유통기한 상태 필터를 한 화면에서 관리합니다.
 export function DashboardPage() {
   const [selectedSection, setSelectedSection] = useState<StorageSection>('fridge');
+  const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all');
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
   const [detailForm, setDetailForm] = useState<ItemDetailFormValues>(emptyDetailForm);
+
+  const filteredFreezerItems = freezerItems.filter((item) => matchesExpiryFilter(item, expiryFilter));
+  const filteredFridgeItems = fridgeItems.filter((item) => matchesExpiryFilter(item, expiryFilter));
+  const emptyStorageMessage = expiryFilter === 'all' ? '아직 등록된 식재료가 없습니다.' : '조건에 맞는 식재료가 없습니다.';
 
   const handleAddItem = (food: FoodItem) => {
     const newItem: StoredFoodItem = {
@@ -48,6 +75,14 @@ export function DashboardPage() {
   const handleCloseDetailPanel = () => {
     setSelectedItem(null);
     setDetailForm(emptyDetailForm);
+  };
+
+  const handleChangeExpiryFilter = (nextFilter: ExpiryFilter) => {
+    setExpiryFilter(nextFilter);
+
+    if (selectedItem && !matchesExpiryFilter(selectedItem, nextFilter)) {
+      handleCloseDetailPanel();
+    }
   };
 
   const handleSaveItemDetail = () => {
@@ -163,19 +198,42 @@ export function DashboardPage() {
 
             <section className="min-h-0 min-w-0 overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-3 shadow-2xl sm:p-4 md:p-5 lg:p-6">
               <div className="flex h-full min-h-0 flex-col gap-3 sm:gap-4 md:gap-5">
+                <div className="flex flex-shrink-0 flex-wrap items-center justify-center gap-1 rounded-xl border border-sky-200 bg-white/80 p-1 shadow-sm sm:gap-1.5 sm:p-1.5">
+                  {EXPIRY_FILTER_OPTIONS.map((option) => {
+                    const isActive = expiryFilter === option.value;
+
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleChangeExpiryFilter(option.value)}
+                        className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors sm:px-3 sm:text-xs ${
+                          isActive
+                            ? 'bg-sky-600 text-white shadow-sm'
+                            : 'text-sky-600 hover:bg-sky-50 hover:text-sky-700'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <StorageZone
                   section="freezer"
                   title="냉동 칸"
-                  items={freezerItems}
+                  items={filteredFreezerItems}
                   selectedItemId={selectedItem?.uniqueId}
+                  emptyMessage={emptyStorageMessage}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />
                 <StorageZone
                   section="fridge"
                   title="냉장 칸"
-                  items={fridgeItems}
+                  items={filteredFridgeItems}
                   selectedItemId={selectedItem?.uniqueId}
+                  emptyMessage={emptyStorageMessage}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
                 />

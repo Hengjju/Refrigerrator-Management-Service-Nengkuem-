@@ -15,9 +15,24 @@ interface ItemDetailPanelProps {
   onClose: () => void;
 }
 
+function getTodayDateInputValue() {
+  const today = new Date();
+  const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60 * 1000);
+
+  return localToday.toISOString().slice(0, 10);
+}
+
 // 식재료 카드 클릭 시 열리는 상세 수정 패널입니다.
 // 이름, 유통기한, 메모, 삭제처럼 한 식재료의 상세 관리 기능을 담당합니다.
 export function ItemDetailPanel({ item, values, onChange, onSave, onDelete, onClose }: ItemDetailPanelProps) {
+  const minExpiryDate = getTodayDateInputValue();
+
+  const handleExpiryDateChange = (nextExpiryDate: string) => {
+    if (nextExpiryDate && nextExpiryDate < minExpiryDate) return;
+
+    onChange({ ...values, expiryDate: nextExpiryDate });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
@@ -52,8 +67,9 @@ export function ItemDetailPanel({ item, values, onChange, onSave, onDelete, onCl
             <input
               id="item-expiry-input"
               type="date"
+              min={minExpiryDate}
               value={values.expiryDate}
-              onChange={(event) => onChange({ ...values, expiryDate: event.target.value })}
+              onChange={(event) => handleExpiryDateChange(event.target.value)}
               className="w-full rounded-lg border-2 border-sky-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
             />
           </div>

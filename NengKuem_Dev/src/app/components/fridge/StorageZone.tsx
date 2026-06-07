@@ -1,68 +1,54 @@
-﻿import type { StoredFoodItem, StorageSection } from '../../types/ingredient';
-
-const DAY_IN_MS = 1000 * 60 * 60 * 24;
-
-type ExpiryStatus = 'fresh' | 'today' | 'expired';
-
-interface ExpiryDdayInfo {
-  label: string;
-  status: ExpiryStatus;
-}
+import type { StoredFoodItem, StorageSection } from '../../types/ingredient';
+import { formatExpiryDate, getExpiryDdayInfo, type ExpiryStatus } from '../../utils/expiryStatus';
 
 interface StorageZoneProps {
   section: StorageSection;
   title: string;
   items: StoredFoodItem[];
   selectedItemId?: string | null;
+  emptyMessage?: string;
   onSelectItem: (item: StoredFoodItem) => void;
   onDeleteItem: (item: StoredFoodItem) => void;
 }
 
-function formatExpiryDate(expiryDate?: string) {
-  if (!expiryDate) return null;
+function getCardToneClass(status?: ExpiryStatus) {
+  if (status === 'expired') return 'border-red-300 bg-red-50/80';
+  if (status === 'today') return 'border-orange-300 bg-orange-50/80';
+  if (status === 'urgent') return 'border-amber-300 bg-amber-50/80';
+  if (status === 'soon') return 'border-yellow-300 bg-yellow-50/80';
+  if (status === 'plenty') return 'border-emerald-300 bg-emerald-50/80';
 
-  return expiryDate.replaceAll('-', '.');
-}
-
-function getLocalDateStart(dateText: string) {
-  const [year, month, day] = dateText.split('-').map(Number);
-
-  if (!year || !month || !day) return null;
-
-  return new Date(year, month - 1, day);
-}
-
-function getExpiryDdayInfo(expiryDate?: string): ExpiryDdayInfo | null {
-  if (!expiryDate) return null;
-
-  const expiry = getLocalDateStart(expiryDate);
-  if (!expiry) return null;
-
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayGap = Math.round((expiry.getTime() - today.getTime()) / DAY_IN_MS);
-
-  if (dayGap < 0) {
-    return { label: `D+${Math.abs(dayGap)}`, status: 'expired' };
-  }
-
-  if (dayGap === 0) {
-    return { label: 'D-day', status: 'today' };
-  }
-
-  return { label: `D-${dayGap}`, status: 'fresh' };
+  return 'border-sky-200 bg-white';
 }
 
 function getDdayBadgeClass(status: ExpiryStatus) {
   if (status === 'expired') return 'border-red-200 bg-red-50 text-red-600';
   if (status === 'today') return 'border-orange-200 bg-orange-50 text-orange-600';
+  if (status === 'urgent') return 'border-amber-200 bg-amber-50 text-amber-700';
+  if (status === 'soon') return 'border-yellow-200 bg-yellow-50 text-yellow-700';
 
-  return 'border-sky-200 bg-sky-50 text-sky-600';
+  return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+}
+
+function getStatusLabelClass(status: ExpiryStatus) {
+  if (status === 'expired') return 'bg-red-100 text-red-600';
+  if (status === 'today') return 'bg-orange-100 text-orange-600';
+  if (status === 'urgent') return 'bg-amber-100 text-amber-700';
+  if (status === 'soon') return 'bg-yellow-100 text-yellow-700';
+
+  return 'bg-emerald-100 text-emerald-700';
 }
 
 // 냉동 칸과 냉장 칸을 공통으로 표현하는 보관 칸 컴포넌트입니다.
-// 저장된 유통기한이 있으면 식재료 카드에 날짜와 D-day 정보를 함께 표시합니다.
-export function StorageZone({ title, items, selectedItemId, onSelectItem, onDeleteItem }: StorageZoneProps) {
+// 저장된 유통기한이 있으면 식재료 카드에 날짜, D-day, 상태 색상을 함께 표시합니다.
+export function StorageZone({
+  title,
+  items,
+  selectedItemId,
+  emptyMessage = '아직 등록된 식재료가 없습니다.',
+  onSelectItem,
+  onDeleteItem,
+}: StorageZoneProps) {
   const hasItems = items.length > 0;
 
   return (
@@ -75,14 +61,11 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
               const displayName = item.customName || item.name;
               const expiryDateLabel = formatExpiryDate(item.expiryDate);
               const ddayInfo = getExpiryDdayInfo(item.expiryDate);
-              const isExpired = ddayInfo?.status === 'expired';
               const isSelected = selectedItemId === item.uniqueId;
-              const cardStateClass = isSelected
-                ? 'border-sky-500 bg-white shadow-md'
-                : isExpired
-                  ? 'border-red-300 bg-red-50/70'
-                  : 'border-sky-200 bg-white';
-              const expiryDateClass = isExpired ? 'bg-red-50 text-red-600' : 'bg-sky-50 text-sky-600';
+              const cardStateClass = `${getCardToneClass(ddayInfo?.status)} ${
+                isSelected ? 'shadow-md ring-2 ring-sky-300' : ''
+              }`;
+              const expiryDateClass = ddayInfo ? getStatusLabelClass(ddayInfo.status) : 'bg-sky-50 text-sky-600';
 
               return (
                 <div
@@ -96,7 +79,7 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
                       onSelectItem(item);
                     }
                   }}
-                  className={`relative flex min-h-[104px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[112px] ${cardStateClass}`}
+                  className={`relative flex min-h-[112px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md sm:min-h-[120px] ${cardStateClass}`}
                 >
                   {ddayInfo && (
                     <span
@@ -120,18 +103,25 @@ export function StorageZone({ title, items, selectedItemId, onSelectItem, onDele
                   </button>
                   <span className="text-xl sm:text-2xl">{item.emoji}</span>
                   <span className="max-w-full truncate text-[10px] font-medium text-gray-700 sm:text-[11px]">{displayName}</span>
-                  {expiryDateLabel && (
-                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${expiryDateClass}`}>
-                      {expiryDateLabel}
-                    </span>
-                  )}
+                  <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
+                    {expiryDateLabel && (
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${expiryDateClass}`}>
+                        {expiryDateLabel}
+                      </span>
+                    )}
+                    {ddayInfo && (
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${getStatusLabelClass(ddayInfo.status)}`}>
+                        {ddayInfo.statusLabel}
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-center">
-            <p className="text-sm font-medium text-sky-500 sm:text-base md:text-lg">아직 등록된 식재료가 없습니다.</p>
+            <p className="text-sm font-medium text-sky-500 sm:text-base md:text-lg">{emptyMessage}</p>
           </div>
         )}
       </div>
