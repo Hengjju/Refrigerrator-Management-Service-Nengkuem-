@@ -1,4 +1,4 @@
-import { useMemo, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
@@ -36,6 +36,51 @@ const EXPIRY_SORT_OPTIONS: { value: ExpirySort; label: string }[] = [
   { value: 'near', label: '가까운 순' },
   { value: 'far', label: '먼 순' },
 ];
+
+const FOOD_DRAG_TYPE = 'application/x-nengkuem-food-id';
+const STORED_ITEM_DRAG_TYPE = 'application/x-nengkuem-stored-item-id';
+const TOUCH_DRAG_THRESHOLD = 8;
+
+type MobileDragBase = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  label: string;
+  emoji: string;
+  iconSrc?: string;
+};
+
+type MobileFoodDrag = MobileDragBase & {
+  type: 'food';
+  foodId: string;
+};
+
+type MobileStoredDrag = MobileDragBase & {
+  type: 'stored';
+  item: StoredFoodItem;
+};
+
+type MobileDragPreview = MobileFoodDrag | MobileStoredDrag;
+
+type MobileDragActions = {
+  dropFood: (foodId: string, section: StorageSection) => void;
+  moveStoredItem: (itemId: string, section: StorageSection) => void;
+  deleteItem: (item: StoredFoodItem) => void;
+};
+
+function getStorageSectionFromPoint(x: number, y: number): StorageSection | null {
+  if (typeof document === 'undefined') return null;
+
+  const storageElement = document
+    .elementsFromPoint(x, y)
+    .map((element) => (element instanceof HTMLElement ? element.closest('[data-storage-section]') : null))
+    .find((element): element is HTMLElement => element instanceof HTMLElement);
+  const section = storageElement?.dataset.storageSection;
+
+  return section === 'freezer' || section === 'fridge' ? section : null;
+}
 
 function matchesExpiryFilter(item: StoredFoodItem, filter: ExpiryFilter) {
   if (filter === 'all') return true;
@@ -98,6 +143,11 @@ export function DashboardPage() {
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
   const [detailForm, setDetailForm] = useState<ItemDetailFormValues>(emptyDetailForm);
+  const [mobileDragPreview, setMobileDragPreview] = useState<MobileDragPreview | null>(null);
+  const pendingMobileDragRef = useRef<MobileDragPreview | null>(null);
+  const activeMobileDragRef = useRef<MobileDragPreview | null>(null);
+  const mobileDragActionsRef = useRef<MobileDragActions | null>(null);
+  const suppressSelectAfterDragRef = useRef(false);
 
   const foodCatalog = AVAILABLE_FOODS;
   const activeSortLabel = EXPIRY_SORT_OPTIONS.find((option) => option.value === expirySort)?.label || '기본순';
@@ -133,7 +183,7 @@ export function DashboardPage() {
 
   const handleFoodDragStart = (event: DragEvent<HTMLButtonElement>, food: FoodItem) => {
     event.dataTransfer.effectAllowed = 'copy';
-    event.dataTransfer.setData('application/x-nengkuem-food-id', food.id);
+    event.dataTransfer.setData(FOOD_DRAG_TYPE, food.id);
     event.dataTransfer.setData('text/plain', food.id);
   };
 
@@ -182,6 +232,11 @@ export function DashboardPage() {
   };
 
   const handleSelectItem = (item: StoredFoodItem) => {
+    if (suppressSelectAfterDragRef.current) {
+      suppressSelectAfterDragRef.current = false;
+      return;
+    }
+
     setSelectedItem(item);
     setDetailForm({
       name: item.customName || item.name,
@@ -271,8 +326,159 @@ export function DashboardPage() {
     );
   };
 
+  mobileDragActionsRef.current = {
+    dropFood: handleDropFood,
+    moveStoredItem: handleMoveStoredItem,
+    deleteItem: handleDeleteItem,
+  };
+
+  const handleFoodPointerDown = (event: ReactPointerEvent<HTMLButtonElement>, food: FoodItem) => {
+    if (event.pointerType === 'mouse') return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    pendingMobileDragRef.current = {
+      type: 'food',
+      pointerId: event.pointerId,
+      foodId: food.id,
+      label: food.name,
+      emoji: food.emoji,
+      iconSrc: food.iconSrc,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  };
+
+  const handleStoredItemPointerDown = (event: ReactPointerEvent<HTMLDivElement>, item: StoredFoodItem) => {
+    if (event.pointerType === 'mouse') return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    pendingMobileDragRef.current = {
+      type: 'stored',
+      pointerId: event.pointerId,
+      item,
+      label: item.customName || item.name,
+      emoji: item.emoji,
+      iconSrc: item.iconSrc,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  };
+
+  const handleDashboardDragOver = (event: DragEvent<HTMLElement>) => {
+    if (!Array.from(event.dataTransfer.types).includes(STORED_ITEM_DRAG_TYPE)) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDashboardDrop = (event: DragEvent<HTMLElement>) => {
+    const itemId = event.dataTransfer.getData(STORED_ITEM_DRAG_TYPE);
+
+    if (!itemId || getStorageSectionFromPoint(event.clientX, event.clientY)) return;
+
+    event.preventDefault();
+    setDragOverSection(null);
+
+    const itemToDelete = [...freezerItems, ...fridgeItems].find((item) => item.uniqueId === itemId);
+
+    if (itemToDelete) {
+      handleDeleteItem(itemToDelete);
+    }
+  };
+
+  useEffect(() => {
+    const clearMobileDrag = () => {
+      pendingMobileDragRef.current = null;
+      activeMobileDragRef.current = null;
+      setMobileDragPreview(null);
+      setDragOverSection(null);
+    };
+
+    const finishMobileDrag = (dragPreview: MobileDragPreview, x: number, y: number) => {
+      const targetSection = getStorageSectionFromPoint(x, y);
+      const actions = mobileDragActionsRef.current;
+
+      if (!actions) return;
+
+      if (dragPreview.type === 'food') {
+        if (targetSection) {
+          actions.dropFood(dragPreview.foodId, targetSection);
+        }
+
+        return;
+      }
+
+      if (targetSection) {
+        actions.moveStoredItem(dragPreview.item.uniqueId, targetSection);
+        return;
+      }
+
+      actions.deleteItem(dragPreview.item);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const pendingDrag = pendingMobileDragRef.current;
+
+      if (!pendingDrag || pendingDrag.pointerId !== event.pointerId) return;
+
+      const dragDistance = Math.hypot(event.clientX - pendingDrag.startX, event.clientY - pendingDrag.startY);
+
+      if (!activeMobileDragRef.current && dragDistance < TOUCH_DRAG_THRESHOLD) return;
+
+      event.preventDefault();
+
+      const nextPreview = {
+        ...pendingDrag,
+        x: event.clientX,
+        y: event.clientY,
+      };
+
+      pendingMobileDragRef.current = nextPreview;
+      activeMobileDragRef.current = nextPreview;
+      setMobileDragPreview(nextPreview);
+      setDragOverSection(getStorageSectionFromPoint(event.clientX, event.clientY));
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const pendingDrag = pendingMobileDragRef.current;
+
+      if (!pendingDrag || pendingDrag.pointerId !== event.pointerId) return;
+
+      const activeDrag = activeMobileDragRef.current;
+
+      if (activeDrag) {
+        event.preventDefault();
+        suppressSelectAfterDragRef.current = true;
+        finishMobileDrag(activeDrag, event.clientX, event.clientY);
+        window.setTimeout(() => {
+          suppressSelectAfterDragRef.current = false;
+        }, 100);
+      }
+
+      clearMobileDrag();
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: false });
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', clearMobileDrag);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', clearMobileDrag);
+    };
+  }, []);
+
   return (
     <div
+      onDragOver={handleDashboardDragOver}
+      onDrop={handleDashboardDrop}
       className="h-[100dvh] w-full overflow-hidden bg-gradient-to-br from-sky-50 to-white p-1.5 sm:p-4 md:p-6 lg:p-8"
       style={{ fontFamily: "'Nanum Gothic', sans-serif" }}
     >
@@ -340,7 +546,8 @@ export function DashboardPage() {
                       draggable
                       onDragStart={(event) => handleFoodDragStart(event, food)}
                       onDragEnd={() => setDragOverSection(null)}
-                      className="relative flex min-h-[86px] cursor-grab flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] sm:p-2 lg:min-h-[104px]"
+                      onPointerDown={(event) => handleFoodPointerDown(event, food)}
+                      className="relative flex min-h-[86px] touch-none cursor-grab select-none flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] sm:p-2 lg:min-h-[104px]"
                       aria-label={`${food.name} 드래그해서 추가`}
                     >
                       {food.rank && (
@@ -444,6 +651,7 @@ export function DashboardPage() {
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
+                  onStartMobileDragItem={handleStoredItemPointerDown}
                   onOpenList={setActiveListSection}
                 />
                 <StorageZone
@@ -459,6 +667,7 @@ export function DashboardPage() {
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
+                  onStartMobileDragItem={handleStoredItemPointerDown}
                   onOpenList={setActiveListSection}
                 />
               </div>
@@ -466,6 +675,33 @@ export function DashboardPage() {
           </div>
         </main>
       </div>
+
+      {mobileDragPreview && (
+        <div
+          className={`pointer-events-none fixed z-[80] flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-2xl border-2 bg-white/95 px-3 py-2 text-xs font-bold shadow-2xl backdrop-blur-sm ${
+            dragOverSection
+              ? 'border-emerald-300 text-emerald-700'
+              : mobileDragPreview.type === 'stored'
+                ? 'border-red-300 text-red-600'
+                : 'border-sky-300 text-sky-600'
+          }`}
+          style={{ left: mobileDragPreview.x, top: mobileDragPreview.y }}
+        >
+          <FoodIcon
+            emoji={mobileDragPreview.emoji}
+            iconSrc={mobileDragPreview.iconSrc}
+            name={mobileDragPreview.label}
+            emojiClassName="text-xl"
+            imageClassName="h-8 w-8 object-contain"
+          />
+          <div className="flex flex-col leading-tight">
+            <span className="max-w-[96px] truncate">{mobileDragPreview.label}</span>
+            <span className="text-[10px]">
+              {dragOverSection ? '여기에 놓기' : mobileDragPreview.type === 'stored' ? '놓으면 삭제' : '칸 위에 놓기'}
+            </span>
+          </div>
+        </div>
+      )}
 
       <OptionMenuPanel
         isOpen={isOptionMenuOpen}

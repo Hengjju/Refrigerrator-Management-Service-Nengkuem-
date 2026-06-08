@@ -1,4 +1,4 @@
-import type { DragEvent } from 'react';
+import type { DragEvent, PointerEvent as ReactPointerEvent } from 'react';
 
 import { FoodIcon } from './FoodIcon';
 import type { StoredFoodItem, StorageSection } from '../../types/ingredient';
@@ -20,6 +20,7 @@ interface StorageZoneProps {
   onDropStoredItem?: (itemId: string, section: StorageSection) => void;
   onSelectItem: (item: StoredFoodItem) => void;
   onDeleteItem: (item: StoredFoodItem) => void;
+  onStartMobileDragItem?: (event: ReactPointerEvent<HTMLDivElement>, item: StoredFoodItem) => void;
   onOpenList?: (section: StorageSection) => void;
 }
 
@@ -66,6 +67,7 @@ export function StorageZone({
   onDropStoredItem,
   onSelectItem,
   onDeleteItem,
+  onStartMobileDragItem,
   onOpenList,
 }: StorageZoneProps) {
   const hasItems = items.length > 0;
@@ -90,6 +92,7 @@ export function StorageZone({
     if (!onDropFood && !onDropStoredItem) return;
 
     event.preventDefault();
+    event.stopPropagation();
 
     const itemId = event.dataTransfer.getData(STORED_ITEM_DRAG_TYPE);
     const foodId = event.dataTransfer.getData(FOOD_DRAG_TYPE) || event.dataTransfer.getData('text/plain');
@@ -112,6 +115,7 @@ export function StorageZone({
 
   return (
     <div
+      data-storage-section={section}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -157,6 +161,7 @@ export function StorageZone({
                   draggable
                   onClick={() => onSelectItem(item)}
                   onDragStart={(event) => handleStoredItemDragStart(event, item)}
+                  onPointerDown={(event) => onStartMobileDragItem?.(event, item)}
                   onDragEnd={() => onDragLeaveSection?.(section)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
@@ -164,7 +169,7 @@ export function StorageZone({
                       onSelectItem(item);
                     }
                   }}
-                  className={`relative flex min-h-[104px] cursor-grab flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[120px] ${cardStateClass}`}
+                  className={`relative flex min-h-[104px] touch-none cursor-grab select-none flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[120px] ${cardStateClass}`}
                   aria-label={`${displayName} 선택 또는 다른 칸으로 이동`}
                 >
                   {ddayInfo && (
@@ -178,6 +183,7 @@ export function StorageZone({
                   )}
                   <button
                     type="button"
+                    onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => {
                       event.stopPropagation();
                       onDeleteItem(item);
