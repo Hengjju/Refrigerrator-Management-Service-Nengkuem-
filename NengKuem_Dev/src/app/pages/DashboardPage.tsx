@@ -4,6 +4,7 @@ import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
 import { FoodIcon } from '../components/fridge/FoodIcon';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
+import { StorageListPanel } from '../components/fridge/StorageListPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
 import { RecipeListPanel } from '../components/recipe/RecipeListPanel';
 import { OptionMenuPanel, type OptionMenuItemId } from '../components/layout/OptionMenuPanel';
@@ -92,6 +93,7 @@ export function DashboardPage() {
   const [isCustomFoodModalOpen, setIsCustomFoodModalOpen] = useState(false);
   const [activeOptionMenu, setActiveOptionMenu] = useState<OptionMenuItemId>('dashboard');
   const [dragOverSection, setDragOverSection] = useState<StorageSection | null>(null);
+  const [activeListSection, setActiveListSection] = useState<StorageSection | null>(null);
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
@@ -108,6 +110,8 @@ export function DashboardPage() {
     expirySort,
   );
   const emptyStorageMessage = expiryFilter === 'all' ? '아직 등록된 식재료가 없습니다.' : '조건에 맞는 식재료가 없습니다.';
+  const activeListItems = activeListSection === 'freezer' ? freezerItems : fridgeItems;
+  const activeListTitle = activeListSection === 'freezer' ? '냉동 칸' : '냉장 칸';
   const recipeIngredients: RecipeIngredientInput[] = useMemo(
     () => [...fridgeItems, ...freezerItems].map((item) => ({
       id: item.uniqueId,
@@ -233,6 +237,21 @@ export function DashboardPage() {
     }
 
     handleCloseDetailPanel();
+  };
+
+  const handleDeleteItems = (section: StorageSection, itemIds: string[]) => {
+    if (itemIds.length === 0) return;
+
+    if (selectedItem && itemIds.includes(selectedItem.uniqueId)) {
+      handleCloseDetailPanel();
+    }
+
+    if (section === 'freezer') {
+      setFreezerItems((prevItems) => prevItems.filter((item) => !itemIds.includes(item.uniqueId)));
+      return;
+    }
+
+    setFridgeItems((prevItems) => prevItems.filter((item) => !itemIds.includes(item.uniqueId)));
   };
 
   const handleDeleteItem = (itemToDelete: StoredFoodItem) => {
@@ -425,7 +444,9 @@ export function DashboardPage() {
                   onDropFood={handleDropFood}
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
+
                   onDeleteItem={handleDeleteItem}
+                  onOpenList={setActiveListSection}
                 />
                 <StorageZone
                   section="fridge"
@@ -439,7 +460,9 @@ export function DashboardPage() {
                   onDropFood={handleDropFood}
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
+
                   onDeleteItem={handleDeleteItem}
+                  onOpenList={setActiveListSection}
                 />
               </div>
             </section>
@@ -465,6 +488,19 @@ export function DashboardPage() {
         onClose={() => setIsSettingsPanelOpen(false)}
       />
 
+      {activeListSection && (
+        <StorageListPanel
+          section={activeListSection}
+          title={activeListTitle}
+          items={activeListItems}
+          onSelectItem={(item) => {
+            handleSelectItem(item);
+            setActiveListSection(null);
+          }}
+          onDeleteItems={handleDeleteItems}
+          onClose={() => setActiveListSection(null)}
+        />
+      )}
       <CustomFoodModal
         isOpen={isCustomFoodModalOpen}
         onCreate={handleCreateCustomFood}

@@ -140,10 +140,7 @@ export function CustomFoodModal({ isOpen, onCreate, onClose }: CustomFoodModalPr
 
   const selectIcon = (icon: IconOption) => {
     setSelectedIcon(icon);
-
-    if (!name.trim()) {
-      setName(icon.defaultName);
-    }
+    setName(icon.defaultName);
   };
 
   const handleSubmit = () => {

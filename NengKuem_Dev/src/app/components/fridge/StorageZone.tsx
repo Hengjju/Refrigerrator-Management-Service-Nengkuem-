@@ -20,6 +20,7 @@ interface StorageZoneProps {
   onDropStoredItem?: (itemId: string, section: StorageSection) => void;
   onSelectItem: (item: StoredFoodItem) => void;
   onDeleteItem: (item: StoredFoodItem) => void;
+  onOpenList?: (section: StorageSection) => void;
 }
 
 function getCardToneClass(status?: ExpiryStatus) {
@@ -65,6 +66,7 @@ export function StorageZone({
   onDropStoredItem,
   onSelectItem,
   onDeleteItem,
+  onOpenList,
 }: StorageZoneProps) {
   const hasItems = items.length > 0;
 
@@ -117,7 +119,19 @@ export function StorageZone({
         isDragOver ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_0_3px_rgba(52,211,153,0.35)]' : 'border-sky-300 bg-sky-50'
       }`}
     >
-      <h2 className="mb-3 flex-shrink-0 text-center text-xl font-bold text-sky-600 sm:text-2xl md:mb-4 md:text-3xl">{title}</h2>
+      <div className="mb-3 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center md:mb-4">
+        <span aria-hidden="true" />
+        <h2 className="text-center text-xl font-bold text-sky-600 sm:text-2xl md:text-3xl">{title}</h2>
+        {onOpenList && (
+          <button
+            type="button"
+            onClick={() => onOpenList(section)}
+            className="justify-self-end rounded-lg border border-sky-300 bg-white px-2.5 py-1 text-[10px] font-bold text-sky-600 transition-colors hover:bg-sky-50 sm:text-xs"
+          >
+            전체
+          </button>
+        )}
+      </div>
       <div
         className={`min-h-0 flex-1 overflow-y-auto rounded-xl border-2 border-dashed p-3 transition-colors sm:p-4 ${
           isDragOver ? 'border-emerald-300 bg-emerald-50/80' : 'border-sky-200 bg-white/70'
