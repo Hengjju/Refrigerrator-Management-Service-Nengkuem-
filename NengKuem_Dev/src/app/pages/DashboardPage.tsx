@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
+import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
 import { OptionMenuPanel, type OptionMenuItemId } from '../components/layout/OptionMenuPanel';
@@ -82,13 +83,16 @@ export function DashboardPage() {
   const [expirySort, setExpirySort] = useState<ExpirySort>('default');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isOptionMenuOpen, setIsOptionMenuOpen] = useState(false);
+  const [isCustomFoodModalOpen, setIsCustomFoodModalOpen] = useState(false);
   const [activeOptionMenu, setActiveOptionMenu] = useState<OptionMenuItemId>('dashboard');
   const [dragOverSection, setDragOverSection] = useState<StorageSection | null>(null);
+  const [customFoods, setCustomFoods] = useState<FoodItem[]>([]);
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
   const [detailForm, setDetailForm] = useState<ItemDetailFormValues>(emptyDetailForm);
 
+  const foodCatalog = [...AVAILABLE_FOODS, ...customFoods];
   const activeSortLabel = EXPIRY_SORT_OPTIONS.find((option) => option.value === expirySort)?.label || '기본순';
   const filteredFreezerItems = sortItemsByExpiry(
     freezerItems.filter((item) => matchesExpiryFilter(item, expiryFilter)),
@@ -118,12 +122,23 @@ export function DashboardPage() {
   };
 
   const handleDropFood = (foodId: string, section: StorageSection) => {
-    const food = AVAILABLE_FOODS.find((availableFood) => availableFood.id === foodId);
+    const food = foodCatalog.find((availableFood) => availableFood.id === foodId);
     setDragOverSection(null);
 
     if (!food) return;
 
     addFoodToSection(food, section);
+  };
+
+  const handleCreateCustomFood = (name: string, emoji: string) => {
+    const newFood: FoodItem = {
+      id: `custom-${Date.now()}`,
+      name,
+      emoji,
+    };
+
+    setCustomFoods((prevFoods) => [...prevFoods, newFood]);
+    setIsCustomFoodModalOpen(false);
   };
 
   const handleMoveStoredItem = (itemId: string, targetSection: StorageSection) => {
@@ -253,7 +268,7 @@ export function DashboardPage() {
                   className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto pr-0.5 scrollbar-hide sm:gap-3 sm:pr-1"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                  {AVAILABLE_FOODS.map((food) => (
+                  {foodCatalog.map((food) => (
                     <button
                       key={food.id}
                       type="button"
@@ -268,6 +283,15 @@ export function DashboardPage() {
                     </button>
                   ))}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCustomFoodModalOpen(true)}
+                  className="mt-3 flex h-10 flex-shrink-0 items-center justify-center gap-1 rounded-xl border-2 border-sky-300 bg-sky-50 text-sm font-bold text-sky-600 transition-all hover:border-sky-400 hover:bg-white hover:shadow-sm"
+                >
+                  <span className="text-lg leading-none">+</span>
+                  <span>식재료 추가</span>
+                </button>
               </div>
             </aside>
 
@@ -371,6 +395,12 @@ export function DashboardPage() {
         activeItemId={activeOptionMenu}
         onSelectItem={setActiveOptionMenu}
         onClose={() => setIsOptionMenuOpen(false)}
+      />
+
+      <CustomFoodModal
+        isOpen={isCustomFoodModalOpen}
+        onCreate={handleCreateCustomFood}
+        onClose={() => setIsCustomFoodModalOpen(false)}
       />
 
       {selectedItem && (
