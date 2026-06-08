@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent, type TouchEvent as ReactTouchEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
@@ -40,9 +40,10 @@ const EXPIRY_SORT_OPTIONS: { value: ExpirySort; label: string }[] = [
 const FOOD_DRAG_TYPE = 'application/x-nengkuem-food-id';
 const STORED_ITEM_DRAG_TYPE = 'application/x-nengkuem-stored-item-id';
 const TOUCH_DRAG_THRESHOLD = 8;
+const TOUCH_DRAG_DELAY = 250;
 
 type MobileDragBase = {
-  pointerId: number;
+  touchId: number;
   startX: number;
   startY: number;
   x: number;
@@ -80,6 +81,16 @@ function getStorageSectionFromPoint(x: number, y: number): StorageSection | null
   const section = storageElement?.dataset.storageSection;
 
   return section === 'freezer' || section === 'fridge' ? section : null;
+}
+
+function getTouchById(touches: TouchList, touchId: number) {
+  for (let index = 0; index < touches.length; index += 1) {
+    const touch = touches.item(index);
+
+    if (touch?.identifier === touchId) return touch;
+  }
+
+  return null;
 }
 
 function matchesExpiryFilter(item: StoredFoodItem, filter: ExpiryFilter) {
@@ -146,6 +157,7 @@ export function DashboardPage() {
   const [mobileDragPreview, setMobileDragPreview] = useState<MobileDragPreview | null>(null);
   const pendingMobileDragRef = useRef<MobileDragPreview | null>(null);
   const activeMobileDragRef = useRef<MobileDragPreview | null>(null);
+  const mobileDragTimerRef = useRef<number | null>(null);
   const mobileDragActionsRef = useRef<MobileDragActions | null>(null);
   const suppressSelectAfterDragRef = useRef(false);
 
@@ -332,42 +344,67 @@ export function DashboardPage() {
     deleteItem: handleDeleteItem,
   };
 
-  const handleFoodPointerDown = (event: ReactPointerEvent<HTMLButtonElement>, food: FoodItem) => {
-    if (event.pointerType === 'mouse') return;
+  const clearMobileDragTimer = () => {
+    if (mobileDragTimerRef.current === null) return;
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    window.clearTimeout(mobileDragTimerRef.current);
+    mobileDragTimerRef.current = null;
+  };
 
-    pendingMobileDragRef.current = {
+  const startLongPressMobileDrag = (dragPreview: MobileDragPreview) => {
+    clearMobileDragTimer();
+    pendingMobileDragRef.current = dragPreview;
+    mobileDragTimerRef.current = window.setTimeout(() => {
+      const pendingDrag = pendingMobileDragRef.current;
+
+      if (!pendingDrag || pendingDrag.touchId !== dragPreview.touchId) return;
+
+      activeMobileDragRef.current = pendingDrag;
+      setMobileDragPreview(pendingDrag);
+      setDragOverSection(getStorageSectionFromPoint(pendingDrag.x, pendingDrag.y));
+    }, TOUCH_DRAG_DELAY);
+  };
+
+  const handleFoodTouchStart = (event: ReactTouchEvent<HTMLButtonElement>, food: FoodItem) => {
+    if (event.touches.length !== 1) return;
+
+    const touch = event.changedTouches.item(0) || event.touches.item(0);
+
+    if (!touch) return;
+
+    startLongPressMobileDrag({
       type: 'food',
-      pointerId: event.pointerId,
+      touchId: touch.identifier,
       foodId: food.id,
       label: food.name,
       emoji: food.emoji,
       iconSrc: food.iconSrc,
-      startX: event.clientX,
-      startY: event.clientY,
-      x: event.clientX,
-      y: event.clientY,
-    };
+      startX: touch.clientX,
+      startY: touch.clientY,
+      x: touch.clientX,
+      y: touch.clientY,
+    });
   };
 
-  const handleStoredItemPointerDown = (event: ReactPointerEvent<HTMLDivElement>, item: StoredFoodItem) => {
-    if (event.pointerType === 'mouse') return;
+  const handleStoredItemTouchStart = (event: ReactTouchEvent<HTMLDivElement>, item: StoredFoodItem) => {
+    if (event.touches.length !== 1) return;
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const touch = event.changedTouches.item(0) || event.touches.item(0);
 
-    pendingMobileDragRef.current = {
+    if (!touch) return;
+
+    startLongPressMobileDrag({
       type: 'stored',
-      pointerId: event.pointerId,
+      touchId: touch.identifier,
       item,
       label: item.customName || item.name,
       emoji: item.emoji,
       iconSrc: item.iconSrc,
-      startX: event.clientX,
-      startY: event.clientY,
-      x: event.clientX,
-      y: event.clientY,
-    };
+      startX: touch.clientX,
+      startY: touch.clientY,
+      x: touch.clientX,
+      y: touch.clientY,
+    });
   };
 
   const handleDashboardDragOver = (event: DragEvent<HTMLElement>) => {
@@ -394,6 +431,7 @@ export function DashboardPage() {
 
   useEffect(() => {
     const clearMobileDrag = () => {
+      clearMobileDragTimer();
       pendingMobileDragRef.current = null;
       activeMobileDragRef.current = null;
       setMobileDragPreview(null);
@@ -422,40 +460,61 @@ export function DashboardPage() {
       actions.deleteItem(dragPreview.item);
     };
 
-    const handlePointerMove = (event: PointerEvent) => {
+    const handleTouchMove = (event: TouchEvent) => {
       const pendingDrag = pendingMobileDragRef.current;
 
-      if (!pendingDrag || pendingDrag.pointerId !== event.pointerId) return;
+      if (!pendingDrag) return;
 
-      const dragDistance = Math.hypot(event.clientX - pendingDrag.startX, event.clientY - pendingDrag.startY);
+      const touch = getTouchById(event.touches, pendingDrag.touchId);
 
-      if (!activeMobileDragRef.current && dragDistance < TOUCH_DRAG_THRESHOLD) return;
+      if (!touch) return;
+
+      const dragDistance = Math.hypot(touch.clientX - pendingDrag.startX, touch.clientY - pendingDrag.startY);
+      const activeDrag = activeMobileDragRef.current;
+
+      if (!activeDrag) {
+        if (dragDistance > TOUCH_DRAG_THRESHOLD) {
+          clearMobileDrag();
+          return;
+        }
+
+        pendingMobileDragRef.current = {
+          ...pendingDrag,
+          x: touch.clientX,
+          y: touch.clientY,
+        };
+        return;
+      }
 
       event.preventDefault();
 
       const nextPreview = {
-        ...pendingDrag,
-        x: event.clientX,
-        y: event.clientY,
+        ...activeDrag,
+        x: touch.clientX,
+        y: touch.clientY,
       };
 
       pendingMobileDragRef.current = nextPreview;
       activeMobileDragRef.current = nextPreview;
       setMobileDragPreview(nextPreview);
-      setDragOverSection(getStorageSectionFromPoint(event.clientX, event.clientY));
+      setDragOverSection(getStorageSectionFromPoint(touch.clientX, touch.clientY));
     };
 
-    const handlePointerUp = (event: PointerEvent) => {
+    const handleTouchEnd = (event: TouchEvent) => {
       const pendingDrag = pendingMobileDragRef.current;
 
-      if (!pendingDrag || pendingDrag.pointerId !== event.pointerId) return;
+      if (!pendingDrag) return;
+
+      const touch = getTouchById(event.changedTouches, pendingDrag.touchId);
+
+      if (!touch) return;
 
       const activeDrag = activeMobileDragRef.current;
 
       if (activeDrag) {
         event.preventDefault();
         suppressSelectAfterDragRef.current = true;
-        finishMobileDrag(activeDrag, event.clientX, event.clientY);
+        finishMobileDrag(activeDrag, touch.clientX, touch.clientY);
         window.setTimeout(() => {
           suppressSelectAfterDragRef.current = false;
         }, 100);
@@ -464,14 +523,14 @@ export function DashboardPage() {
       clearMobileDrag();
     };
 
-    window.addEventListener('pointermove', handlePointerMove, { passive: false });
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('pointercancel', clearMobileDrag);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', clearMobileDrag);
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('pointercancel', clearMobileDrag);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', clearMobileDrag);
     };
   }, []);
 
@@ -546,8 +605,8 @@ export function DashboardPage() {
                       draggable
                       onDragStart={(event) => handleFoodDragStart(event, food)}
                       onDragEnd={() => setDragOverSection(null)}
-                      onPointerDown={(event) => handleFoodPointerDown(event, food)}
-                      className="relative flex min-h-[86px] touch-none cursor-grab select-none flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] sm:p-2 lg:min-h-[104px]"
+                      onTouchStart={(event) => handleFoodTouchStart(event, food)}
+                      className="relative flex min-h-[86px] touch-manipulation cursor-grab select-none flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] sm:p-2 lg:min-h-[104px]"
                       aria-label={`${food.name} 드래그해서 추가`}
                     >
                       {food.rank && (
@@ -651,7 +710,7 @@ export function DashboardPage() {
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
-                  onStartMobileDragItem={handleStoredItemPointerDown}
+                  onStartMobileDragItem={handleStoredItemTouchStart}
                   onOpenList={setActiveListSection}
                 />
                 <StorageZone
@@ -667,7 +726,7 @@ export function DashboardPage() {
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
                   onDeleteItem={handleDeleteItem}
-                  onStartMobileDragItem={handleStoredItemPointerDown}
+                  onStartMobileDragItem={handleStoredItemTouchStart}
                   onOpenList={setActiveListSection}
                 />
               </div>
