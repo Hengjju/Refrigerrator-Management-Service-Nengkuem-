@@ -2,14 +2,31 @@ import { useState } from 'react';
 
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
-// 앱의 첫 화면을 로그인으로 두고, 로그인 버튼을 누르면 기존 냉장고 대시보드로 전환합니다.
+type AppView = 'login' | 'register' | 'dashboard';
+
+// 인증 API가 붙기 전까지 로그인, 회원가입, 대시보드 화면 전환만 담당하는 앱 루트입니다.
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentView, setCurrentView] = useState<AppView>('login');
 
-  if (!isLoggedIn) {
-    return <LoginPage onLogin={() => setIsLoggedIn(true)} />;
+  if (currentView === 'register') {
+    return (
+      <RegisterPage
+        onBackToLogin={() => setCurrentView('login')}
+        onRegister={() => setCurrentView('dashboard')}
+      />
+    );
   }
 
-  return <DashboardPage />;
+  if (currentView === 'dashboard') {
+    return <DashboardPage />;
+  }
+
+  return (
+    <LoginPage
+      onLogin={() => setCurrentView('dashboard')}
+      onRegister={() => setCurrentView('register')}
+    />
+  );
 }

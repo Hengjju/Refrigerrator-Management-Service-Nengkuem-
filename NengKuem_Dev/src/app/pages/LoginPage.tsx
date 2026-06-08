@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react';
 
 interface LoginPageProps {
   onLogin: () => void;
+  onRegister: () => void;
 }
 
 // 로그인 전 첫 화면입니다.
 // 실제 인증 API가 붙기 전까지는 입력값을 받은 뒤 대시보드로 이동하는 UI 흐름만 담당합니다.
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage({ onLogin, onRegister }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberLogin, setRememberLogin] = useState(true);
@@ -109,7 +110,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
           <div className="mt-6 flex items-center justify-center gap-2 text-xs font-bold text-gray-500">
             <span>처음이신가요?</span>
-            <button type="button" className="text-sky-600 transition-colors hover:text-sky-700">
+            <button type="button" onClick={onRegister} className="text-sky-600 transition-colors hover:text-sky-700">
               회원가입
             </button>
           </div>
