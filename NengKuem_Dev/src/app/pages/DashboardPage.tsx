@@ -3,6 +3,7 @@ import { useState, type DragEvent } from 'react';
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
+import { OptionMenuPanel, type OptionMenuItemId } from '../components/layout/OptionMenuPanel';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 import { getExpiryDdayInfo } from '../utils/expiryStatus';
@@ -80,6 +81,8 @@ export function DashboardPage() {
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all');
   const [expirySort, setExpirySort] = useState<ExpirySort>('default');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isOptionMenuOpen, setIsOptionMenuOpen] = useState(false);
+  const [activeOptionMenu, setActiveOptionMenu] = useState<OptionMenuItemId>('dashboard');
   const [dragOverSection, setDragOverSection] = useState<StorageSection | null>(null);
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
@@ -220,11 +223,16 @@ export function DashboardPage() {
     >
       <div className="mx-auto flex w-full max-w-[1320px] min-w-0 flex-col">
         <header className="mb-4 flex flex-shrink-0 items-center justify-between md:mb-5">
-          <div className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setIsOptionMenuOpen(true)}
+            className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-sky-100"
+            aria-label="옵션 메뉴 열기"
+          >
             <span className="block h-0.5 w-5 rounded-full bg-sky-600" />
             <span className="block h-0.5 w-5 rounded-full bg-sky-600" />
             <span className="block h-0.5 w-5 rounded-full bg-sky-600" />
-          </div>
+          </button>
 
           <h1 className="text-2xl font-bold text-sky-600" style={{ fontFamily: "'YeogiOttaeJalnan', cursive" }}>
             냉큼
@@ -357,6 +365,13 @@ export function DashboardPage() {
           </div>
         </main>
       </div>
+
+      <OptionMenuPanel
+        isOpen={isOptionMenuOpen}
+        activeItemId={activeOptionMenu}
+        onSelectItem={setActiveOptionMenu}
+        onClose={() => setIsOptionMenuOpen(false)}
+      />
 
       {selectedItem && (
         <ItemDetailPanel
