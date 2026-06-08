@@ -115,7 +115,7 @@ export function StorageZone({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex min-h-0 flex-1 flex-col rounded-xl border-2 p-3 transition-all sm:p-4 md:p-5 ${
+      className={`flex min-h-[260px] flex-col rounded-xl border-2 p-3 transition-all sm:min-h-0 sm:flex-1 sm:p-4 md:p-5 ${
         isDragOver ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_0_3px_rgba(52,211,153,0.35)]' : 'border-sky-300 bg-sky-50'
       }`}
     >

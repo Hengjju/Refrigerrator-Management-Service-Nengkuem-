@@ -273,11 +273,11 @@ export function DashboardPage() {
 
   return (
     <div
-      className="min-h-screen w-full overflow-auto bg-gradient-to-br from-sky-50 to-white p-3 sm:p-5 md:p-6 lg:p-8"
+      className="min-h-screen w-full overflow-auto bg-gradient-to-br from-sky-50 to-white p-2 sm:p-4 md:p-6 lg:p-8"
       style={{ fontFamily: "'Nanum Gothic', sans-serif" }}
     >
       <div className="mx-auto flex w-full max-w-[1320px] min-w-0 flex-col">
-        <header className="mb-4 flex flex-shrink-0 items-center justify-between md:mb-5">
+        <header className="mb-2 flex flex-shrink-0 items-center justify-between sm:mb-4 md:mb-5">
           <button
             type="button"
             onClick={() => setIsOptionMenuOpen(true)}
@@ -323,14 +323,14 @@ export function DashboardPage() {
           </button>
         </header>
 
-        <main className="h-[calc(100vh-104px)] min-h-[560px] max-h-[680px] rounded-2xl border-2 border-sky-700 bg-sky-600 p-3 shadow-xl sm:p-4 md:p-5 lg:p-6">
-          <div className="grid h-full min-h-0 min-w-0 grid-cols-[clamp(108px,13vw,180px)_minmax(0,1fr)] gap-3 sm:gap-4 md:gap-5 lg:gap-6">
-            <aside className="min-h-0 min-w-0">
-              <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white p-2 shadow-lg sm:p-3 md:p-4">
-                <div className="mb-3 text-center text-sm font-bold text-sky-600 sm:text-base md:text-lg">식재료</div>
+        <main className="min-h-[calc(100vh-82px)] rounded-2xl border-2 border-sky-700 bg-sky-600 p-2 shadow-xl sm:h-[calc(100vh-104px)] sm:min-h-[560px] sm:max-h-[680px] sm:p-4 md:p-5 lg:p-6">
+          <div className="flex h-full min-h-0 min-w-0 flex-col gap-2 sm:grid sm:grid-cols-[clamp(108px,13vw,180px)_minmax(0,1fr)] sm:gap-4 md:gap-5 lg:gap-6">
+            <aside className="min-h-0 min-w-0 sm:h-full">
+              <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white p-2 shadow-lg sm:h-full sm:p-3 md:p-4">
+                <div className="mb-2 text-center text-sm font-bold text-sky-600 sm:mb-3 sm:text-base md:text-lg">식재료</div>
 
                 <div
-                  className="grid flex-1 grid-cols-1 gap-2 overflow-y-auto pr-0.5 scrollbar-hide sm:gap-3 sm:pr-1"
+                  className="grid max-h-[132px] grid-cols-3 gap-2 overflow-y-auto pr-0.5 scrollbar-hide sm:max-h-none sm:flex-1 sm:grid-cols-1 sm:gap-3 sm:pr-1"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {foodCatalog.map((food) => (
@@ -340,7 +340,7 @@ export function DashboardPage() {
                       draggable
                       onDragStart={(event) => handleFoodDragStart(event, food)}
                       onDragEnd={() => setDragOverSection(null)}
-                      className="relative flex min-h-[76px] cursor-grab flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] md:min-h-[104px] md:p-2"
+                      className="relative flex min-h-[86px] cursor-grab flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] sm:p-2 lg:min-h-[104px]"
                       aria-label={`${food.name} 드래그해서 추가`}
                     >
                       {food.rank && (
@@ -363,7 +363,7 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsCustomFoodModalOpen(true)}
-                  className="mt-3 flex h-10 flex-shrink-0 items-center justify-center gap-1 rounded-xl border-2 border-sky-300 bg-sky-50 text-xs font-bold text-sky-600 transition-all hover:border-sky-400 hover:bg-white hover:shadow-sm"
+                  className="mt-2 flex h-10 flex-shrink-0 items-center justify-center gap-1 rounded-xl border-2 border-sky-300 bg-sky-50 text-xs font-bold text-sky-600 transition-all hover:border-sky-400 hover:bg-white hover:shadow-sm sm:mt-3"
                 >
                   <span className="text-lg leading-none">+</span>
                   <span className="whitespace-nowrap">식재료 추가</span>
@@ -371,10 +371,10 @@ export function DashboardPage() {
               </div>
             </aside>
 
-            <section className="min-h-0 min-w-0 overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-3 shadow-2xl sm:p-4 md:p-5 lg:p-6">
-              <div className="flex h-full min-h-0 flex-col gap-3 sm:gap-4 md:gap-5">
-                <div className="relative flex flex-shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-200 bg-white/80 p-1.5 shadow-sm">
-                  <div className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-1 sm:justify-start sm:gap-1.5">
+            <section className="min-h-0 min-w-0 overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-2 shadow-2xl sm:p-4 md:p-5 lg:p-6">
+              <div className="flex h-full min-h-0 flex-col gap-2 sm:gap-4 md:gap-5">
+                <div className="relative flex flex-shrink-0 items-center gap-2 rounded-xl border border-sky-200 bg-white/80 p-1.5 shadow-sm">
+                  <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-hide sm:gap-1.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {EXPIRY_FILTER_OPTIONS.map((option) => {
                       const isActive = expiryFilter === option.value;
 
@@ -396,7 +396,6 @@ export function DashboardPage() {
                   </div>
 
                   <div className="relative flex flex-shrink-0 items-center gap-1">
-                    <span className="text-[10px] font-bold text-gray-500 sm:text-xs">정렬</span>
                     <button
                       type="button"
                       onClick={() => setIsSortMenuOpen((prevOpen) => !prevOpen)}
@@ -444,7 +443,6 @@ export function DashboardPage() {
                   onDropFood={handleDropFood}
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
-
                   onDeleteItem={handleDeleteItem}
                   onOpenList={setActiveListSection}
                 />
@@ -460,7 +458,6 @@ export function DashboardPage() {
                   onDropFood={handleDropFood}
                   onDropStoredItem={handleMoveStoredItem}
                   onSelectItem={handleSelectItem}
-
                   onDeleteItem={handleDeleteItem}
                   onOpenList={setActiveListSection}
                 />
