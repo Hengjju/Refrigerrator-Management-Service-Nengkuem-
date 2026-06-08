@@ -5,6 +5,7 @@ import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
 import { OptionMenuPanel, type OptionMenuItemId } from '../components/layout/OptionMenuPanel';
+import { SettingsPanel } from '../components/layout/SettingsPanel';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 import { getExpiryDdayInfo } from '../utils/expiryStatus';
@@ -83,6 +84,7 @@ export function DashboardPage() {
   const [expirySort, setExpirySort] = useState<ExpirySort>('default');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isOptionMenuOpen, setIsOptionMenuOpen] = useState(false);
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const [isCustomFoodModalOpen, setIsCustomFoodModalOpen] = useState(false);
   const [activeOptionMenu, setActiveOptionMenu] = useState<OptionMenuItemId>('dashboard');
   const [dragOverSection, setDragOverSection] = useState<StorageSection | null>(null);
@@ -253,9 +255,34 @@ export function DashboardPage() {
             냉큼
           </h1>
 
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg">
-            <span className="block h-5 w-5 rounded-full border-2 border-sky-600" />
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsSettingsPanelOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-sky-600 transition-colors hover:bg-sky-100"
+            aria-label="설정 열기"
+          >
+            <svg
+              className="h-7 w-7"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.73v.52a2 2 0 0 1-1 1.73l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.73v-.52a2 2 0 0 1 1-1.73l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle
+                cx="12"
+                cy="12"
+                r="3"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+            </svg>
+          </button>
         </header>
 
         <main className="h-[calc(100vh-104px)] min-h-[560px] max-h-[680px] rounded-2xl border-2 border-sky-700 bg-sky-600 p-3 shadow-xl sm:p-4 md:p-5 lg:p-6">
@@ -395,6 +422,11 @@ export function DashboardPage() {
         activeItemId={activeOptionMenu}
         onSelectItem={setActiveOptionMenu}
         onClose={() => setIsOptionMenuOpen(false)}
+      />
+
+      <SettingsPanel
+        isOpen={isSettingsPanelOpen}
+        onClose={() => setIsSettingsPanelOpen(false)}
       />
 
       <CustomFoodModal
