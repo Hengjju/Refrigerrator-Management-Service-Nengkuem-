@@ -91,13 +91,12 @@ export function DashboardPage() {
   const [isCustomFoodModalOpen, setIsCustomFoodModalOpen] = useState(false);
   const [activeOptionMenu, setActiveOptionMenu] = useState<OptionMenuItemId>('dashboard');
   const [dragOverSection, setDragOverSection] = useState<StorageSection | null>(null);
-  const [customFoods, setCustomFoods] = useState<FoodItem[]>([]);
   const [freezerItems, setFreezerItems] = useState<StoredFoodItem[]>([]);
   const [fridgeItems, setFridgeItems] = useState<StoredFoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
   const [detailForm, setDetailForm] = useState<ItemDetailFormValues>(emptyDetailForm);
 
-  const foodCatalog = [...AVAILABLE_FOODS, ...customFoods];
+  const foodCatalog = AVAILABLE_FOODS;
   const activeSortLabel = EXPIRY_SORT_OPTIONS.find((option) => option.value === expirySort)?.label || '기본순';
   const filteredFreezerItems = sortItemsByExpiry(
     freezerItems.filter((item) => matchesExpiryFilter(item, expiryFilter)),
@@ -142,14 +141,14 @@ export function DashboardPage() {
     addFoodToSection(food, section);
   };
 
-  const handleCreateCustomFood = (name: string, emoji: string) => {
+  const handleCreateCustomFood = (name: string, emoji: string, section: StorageSection) => {
     const newFood: FoodItem = {
       id: `custom-${Date.now()}`,
       name,
       emoji,
     };
 
-    setCustomFoods((prevFoods) => [...prevFoods, newFood]);
+    addFoodToSection(newFood, section);
     setIsCustomFoodModalOpen(false);
   };
 
@@ -320,9 +319,14 @@ export function DashboardPage() {
                       draggable
                       onDragStart={(event) => handleFoodDragStart(event, food)}
                       onDragEnd={() => setDragOverSection(null)}
-                      className="flex min-h-[76px] cursor-grab flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] md:min-h-[104px] md:p-2"
+                      className="relative flex min-h-[76px] cursor-grab flex-col items-center justify-center gap-1 rounded-xl border-2 border-sky-200 bg-white p-1.5 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[92px] md:min-h-[104px] md:p-2"
                       aria-label={`${food.name} 드래그해서 추가`}
                     >
+                      {food.rank && (
+                        <span className="absolute left-1 top-1 rounded-full bg-sky-100 px-1.5 py-0.5 text-[8px] font-bold text-sky-600">
+                          {food.rank}
+                        </span>
+                      )}
                       <span className="text-xl sm:text-2xl md:text-3xl">{food.emoji}</span>
                       <span className="max-w-full truncate whitespace-nowrap px-1 text-[9px] font-medium text-gray-700 sm:text-[10px] md:text-[11px]">{food.name}</span>
                     </button>
