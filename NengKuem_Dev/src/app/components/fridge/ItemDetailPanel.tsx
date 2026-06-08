@@ -1,4 +1,5 @@
-﻿import type { StoredFoodItem } from '../../types/ingredient';
+import { FoodIcon } from './FoodIcon';
+import type { StoredFoodItem } from '../../types/ingredient';
 
 export interface ItemDetailFormValues {
   name: string;
@@ -40,7 +41,13 @@ export function ItemDetailPanel({ item, values, onChange, onSave, onDelete, onCl
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex flex-col items-center gap-2 border-b border-sky-100 pb-4">
-          <span className="text-5xl">{item.emoji}</span>
+          <FoodIcon
+            emoji={item.emoji}
+            iconSrc={item.iconSrc}
+            name={item.customName || item.name}
+            emojiClassName="text-5xl"
+            imageClassName="h-16 w-16 object-contain"
+          />
           <h3 className="text-lg font-bold text-sky-700">식재료 상세 수정</h3>
         </div>
 

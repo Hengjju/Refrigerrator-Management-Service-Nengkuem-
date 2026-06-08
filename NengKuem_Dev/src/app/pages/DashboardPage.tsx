@@ -2,6 +2,7 @@ import { useMemo, useState, type DragEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
+import { FoodIcon } from '../components/fridge/FoodIcon';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
 import { RecipeListPanel } from '../components/recipe/RecipeListPanel';
@@ -141,11 +142,12 @@ export function DashboardPage() {
     addFoodToSection(food, section);
   };
 
-  const handleCreateCustomFood = (name: string, emoji: string, section: StorageSection) => {
+  const handleCreateCustomFood = (name: string, emoji: string, section: StorageSection, iconSrc?: string) => {
     const newFood: FoodItem = {
       id: `custom-${Date.now()}`,
       name,
       emoji,
+      iconSrc,
     };
 
     addFoodToSection(newFood, section);
@@ -327,7 +329,13 @@ export function DashboardPage() {
                           {food.rank}
                         </span>
                       )}
-                      <span className="text-xl sm:text-2xl md:text-3xl">{food.emoji}</span>
+                      <FoodIcon
+                        emoji={food.emoji}
+                        iconSrc={food.iconSrc}
+                        name={food.name}
+                        emojiClassName="text-xl sm:text-2xl md:text-3xl"
+                        imageClassName="h-8 w-8 object-contain sm:h-9 sm:w-9 md:h-10 md:w-10"
+                      />
                       <span className="max-w-full truncate whitespace-nowrap px-1 text-[9px] font-medium text-gray-700 sm:text-[10px] md:text-[11px]">{food.name}</span>
                     </button>
                   ))}

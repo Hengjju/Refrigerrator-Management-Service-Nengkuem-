@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 
+import { FoodIcon } from './FoodIcon';
 import type { StorageSection } from '../../types/ingredient';
 
 interface IconOption {
   emoji: string;
   defaultName: string;
+  iconSrc?: string;
 }
 
 interface IconCategory {
@@ -15,7 +17,7 @@ interface IconCategory {
 
 interface CustomFoodModalProps {
   isOpen: boolean;
-  onCreate: (name: string, emoji: string, section: StorageSection) => void;
+  onCreate: (name: string, emoji: string, section: StorageSection, iconSrc?: string) => void;
   onClose: () => void;
 }
 
@@ -24,15 +26,18 @@ const ICON_CATEGORIES: IconCategory[] = [
     id: 'vegetable',
     label: '채소',
     icons: [
-      { emoji: '🌿', defaultName: '대파' },
+      { emoji: '🌿', defaultName: '대파', iconSrc: '/food-icons/green-onion.svg' },
       { emoji: '🧄', defaultName: '마늘' },
       { emoji: '🧅', defaultName: '양파' },
       { emoji: '🥬', defaultName: '배추' },
+      { emoji: '🥬', defaultName: '김치', iconSrc: '/food-icons/kimchi.svg' },
       { emoji: '🍅', defaultName: '토마토' },
       { emoji: '🥕', defaultName: '당근' },
       { emoji: '🥒', defaultName: '오이' },
+      { emoji: '🥒', defaultName: '애호박', iconSrc: '/food-icons/zucchini.svg' },
       { emoji: '🥔', defaultName: '감자' },
       { emoji: '🍄', defaultName: '버섯' },
+      { emoji: '⚪', defaultName: '무', iconSrc: '/food-icons/radish.svg' },
       { emoji: '🌶️', defaultName: '고추' },
     ],
   },
@@ -97,7 +102,7 @@ const ICON_CATEGORIES: IconCategory[] = [
     id: 'etc',
     label: '기타',
     icons: [
-      { emoji: '◻️', defaultName: '두부' },
+      { emoji: '◻️', defaultName: '두부', iconSrc: '/food-icons/tofu.svg' },
       { emoji: '🥫', defaultName: '통조림' },
       { emoji: '🍯', defaultName: '꿀' },
       { emoji: '🧂', defaultName: '소금' },
@@ -144,7 +149,7 @@ export function CustomFoodModal({ isOpen, onCreate, onClose }: CustomFoodModalPr
   const handleSubmit = () => {
     if (!trimmedName) return;
 
-    onCreate(trimmedName, selectedIcon.emoji, selectedSection);
+    onCreate(trimmedName, selectedIcon.emoji, selectedSection, selectedIcon.iconSrc);
   };
 
   return (
@@ -247,7 +252,13 @@ export function CustomFoodModal({ isOpen, onCreate, onClose }: CustomFoodModalPr
                     aria-label={`${icon.defaultName} 아이콘 선택`}
                     title={icon.defaultName}
                   >
-                    {icon.emoji}
+                    <FoodIcon
+                      emoji={icon.emoji}
+                      iconSrc={icon.iconSrc}
+                      name={icon.defaultName}
+                      emojiClassName="text-base"
+                      imageClassName="h-6 w-6 object-contain"
+                    />
                   </button>
                 );
               })}

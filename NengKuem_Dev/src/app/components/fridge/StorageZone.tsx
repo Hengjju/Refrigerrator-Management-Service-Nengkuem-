@@ -1,5 +1,6 @@
 import type { DragEvent } from 'react';
 
+import { FoodIcon } from './FoodIcon';
 import type { StoredFoodItem, StorageSection } from '../../types/ingredient';
 import { formatExpiryDate, getExpiryDdayInfo, type ExpiryStatus } from '../../utils/expiryStatus';
 
@@ -172,7 +173,13 @@ export function StorageZone({
                   >
                     ×
                   </button>
-                  <span className="text-xl sm:text-2xl">{item.emoji}</span>
+                  <FoodIcon
+                    emoji={item.emoji}
+                    iconSrc={item.iconSrc}
+                    name={displayName}
+                    emojiClassName="text-xl sm:text-2xl"
+                    imageClassName="h-8 w-8 object-contain sm:h-9 sm:w-9"
+                  />
                   <span className="max-w-full truncate text-[10px] font-medium text-gray-700 sm:text-[11px]">{displayName}</span>
                   <div className="flex max-w-full flex-wrap items-center justify-center gap-1">
                     {expiryDateLabel && (
