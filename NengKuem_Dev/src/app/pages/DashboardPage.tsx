@@ -279,7 +279,7 @@ export function DashboardPage() {
                       aria-label={`${food.name} 드래그해서 추가`}
                     >
                       <span className="text-xl sm:text-2xl md:text-3xl">{food.emoji}</span>
-                      <span className="text-[10px] font-medium text-gray-700 sm:text-xs">{food.name}</span>
+                      <span className="max-w-full truncate whitespace-nowrap px-1 text-[9px] font-medium text-gray-700 sm:text-[10px] md:text-[11px]">{food.name}</span>
                     </button>
                   ))}
                 </div>
@@ -287,10 +287,10 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsCustomFoodModalOpen(true)}
-                  className="mt-3 flex h-10 flex-shrink-0 items-center justify-center gap-1 rounded-xl border-2 border-sky-300 bg-sky-50 text-sm font-bold text-sky-600 transition-all hover:border-sky-400 hover:bg-white hover:shadow-sm"
+                  className="mt-3 flex h-10 flex-shrink-0 items-center justify-center gap-1 rounded-xl border-2 border-sky-300 bg-sky-50 text-xs font-bold text-sky-600 transition-all hover:border-sky-400 hover:bg-white hover:shadow-sm"
                 >
                   <span className="text-lg leading-none">+</span>
-                  <span>식재료 추가</span>
+                  <span className="whitespace-nowrap">식재료 추가</span>
                 </button>
               </div>
             </aside>

@@ -1,4 +1,4 @@
-export type OptionMenuItemId = 'dashboard' | 'foodGuide' | 'recipes' | 'history';
+export type OptionMenuItemId = 'dashboard' | 'recipes' | 'history';
 
 interface OptionMenuItem {
   id: OptionMenuItemId;
@@ -14,7 +14,6 @@ interface OptionMenuPanelProps {
 
 const OPTION_MENU_ITEMS: OptionMenuItem[] = [
   { id: 'dashboard', label: '냉장고 현황' },
-  { id: 'foodGuide', label: '식재료 도감' },
   { id: 'recipes', label: '레시피 추천' },
   { id: 'history', label: '보관 기록' },
 ];
