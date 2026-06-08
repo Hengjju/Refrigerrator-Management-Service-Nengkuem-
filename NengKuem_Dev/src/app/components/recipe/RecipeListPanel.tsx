@@ -1,102 +1,261 @@
+﻿import { useEffect, useState } from 'react';
+
+import { fetchRecipeRecommendations } from '../../api/recipeApi';
+import type { RecipeIngredientInput, RecipeRecommendation } from '../../types/recipe';
+
 interface RecipeListPanelProps {
   isOpen: boolean;
+  ingredients: RecipeIngredientInput[];
   onClose: () => void;
 }
 
-interface RecipePreview {
-  id: string;
-  title: string;
-  icon: string;
-  time: string;
-  description: string;
-  ingredients: string[];
-  tags: string[];
+const TEXT = {
+  noInfo: '\uC815\uBCF4 \uC5C6\uC74C',
+  title: '\uB808\uC2DC\uD53C \uCD94\uCC9C',
+  detail: '\uB808\uC2DC\uD53C \uC0C1\uC138',
+  lowMissingOrder: '\uBD80\uC871\uD55C \uC7AC\uB8CC\uAC00 \uC801\uC740 \uC21C\uC11C',
+  close: '\uB808\uC2DC\uD53C \uCD94\uCC9C \uB2EB\uAE30',
+  backToList: '\uBAA9\uB85D\uC73C\uB85C',
+  noImage: '\uC774\uBBF8\uC9C0 \uC5C6\uC74C',
+  ingredientInfo: '\uC7AC\uB8CC \uC815\uBCF4',
+  cookingMethod: '\uC870\uB9AC\uBC29\uBC95',
+  loading: '\uC2DD\uC57D\uCC98 \uB808\uC2DC\uD53C DB\uC5D0\uC11C \uBD88\uB7EC\uC624\uB294 \uC911\uC785\uB2C8\uB2E4.',
+  noList: '\uB9AC\uC2A4\uD2B8\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.',
+  retryGuide: '\uB2E4\uB978 \uC2DD\uC7AC\uB8CC\uB97C \uB123\uAC70\uB098 \uC7A0\uC2DC \uB4A4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.',
+  emptyGuide: '\uC2DD\uC7AC\uB8CC\uB97C \uB0C9\uC7A5\uCE78\uC774\uB098 \uB0C9\uB3D9\uCE78\uC5D0 \uB123\uC73C\uBA74, \uAC01 \uC7AC\uB8CC\uBCC4 \uB808\uC2DC\uD53C \uB9AC\uC2A4\uD2B8\uB97C \uBD88\uB7EC\uC635\uB2C8\uB2E4.',
+  basedOn: '\uAE30\uC900',
+  readyToCook: '\uBC14\uB85C \uAC00\uB2A5',
+  missing: '\uBD80\uC871',
+  countSuffix: '\uAC1C',
+  missingIngredients: '\uBD80\uC871\uD55C \uC7AC\uB8CC',
+  none: '\uC5C6\uC74C',
+};
+
+function getCalorieText(calories: string) {
+  return calories === TEXT.noInfo ? calories : `${calories}kcal`;
 }
 
-const RECIPE_PREVIEWS: RecipePreview[] = [
-  {
-    id: 'egg-cheese-toast',
-    title: '계란 치즈 토스트',
-    icon: '🍳',
-    time: '10분',
-    description: '계란과 치즈를 빠르게 활용하기 좋은 간단 메뉴입니다.',
-    ingredients: ['달걀', '치즈', '우유'],
-    tags: ['아침', '간단'],
-  },
-  {
-    id: 'milk-cream-pasta',
-    title: '우유 크림 파스타',
-    icon: '🥛',
-    time: '20분',
-    description: '우유와 남은 재료를 부드럽게 묶어 먹는 추천 메뉴입니다.',
-    ingredients: ['우유', '치즈'],
-    tags: ['든든', '따뜻함'],
-  },
-  {
-    id: 'vegetable-fried-rice',
-    title: '냉장고 볶음밥',
-    icon: '🍚',
-    time: '15분',
-    description: '자투리 식재료를 한 번에 정리하기 좋은 기본 레시피입니다.',
-    ingredients: ['달걀', '사과', '치즈'],
-    tags: ['정리', '한끼'],
-  },
-];
+// Modal panel shown when the recipe recommendation option is selected.
+export function RecipeListPanel({ isOpen, ingredients, onClose }: RecipeListPanelProps) {
+  const [recipes, setRecipes] = useState<RecipeRecommendation[]>([]);
+  const [selectedRecipe, setSelectedRecipe] = useState<RecipeRecommendation | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-// 옵션 메뉴의 레시피 추천을 눌렀을 때 열리는 레시피 리스트 창입니다.
-export function RecipeListPanel({ isOpen, onClose }: RecipeListPanelProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isCanceled = false;
+    setIsLoading(true);
+    setErrorMessage('');
+    setSelectedRecipe(null);
+
+    fetchRecipeRecommendations(ingredients)
+      .then((nextRecipes) => {
+        if (isCanceled) return;
+
+        setRecipes(nextRecipes);
+      })
+      .catch(() => {
+        if (isCanceled) return;
+
+        setRecipes([]);
+        setErrorMessage(TEXT.noList);
+      })
+      .finally(() => {
+        if (isCanceled) return;
+
+        setIsLoading(false);
+      });
+
+    return () => {
+      isCanceled = true;
+    };
+  }, [isOpen, ingredients]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-3" onClick={onClose}>
       <section
-        className="flex max-h-[min(640px,92vh)] w-full max-w-[680px] flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white shadow-2xl"
+        className="flex max-h-[min(720px,92vh)] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex flex-shrink-0 items-center justify-between border-b border-sky-100 px-4 py-3 sm:px-5">
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-bold text-sky-700">레시피 추천</h2>
-            <p className="mt-0.5 truncate text-xs font-bold text-gray-400">레시피 리스트</p>
+            <h2 className="truncate text-lg font-bold text-sky-700">{TEXT.title}</h2>
+            <p className="mt-0.5 truncate text-xs font-bold text-gray-400">
+              {selectedRecipe ? TEXT.detail : TEXT.lowMissingOrder}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-lg font-bold text-sky-600 transition-colors hover:bg-sky-100"
-            aria-label="레시피 추천 닫기"
+            aria-label={TEXT.close}
           >
-            ×
+            x
           </button>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          <div className="grid gap-3 sm:grid-cols-3">
-            {RECIPE_PREVIEWS.map((recipe) => (
-              <article key={recipe.id} className="rounded-xl border-2 border-sky-100 bg-white p-3 shadow-sm">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-2xl" aria-hidden="true">{recipe.icon}</span>
-                  <span className="rounded-full bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-600">{recipe.time}</span>
-                </div>
-                <h3 className="truncate text-sm font-bold text-gray-800">{recipe.title}</h3>
-                <p className="mt-1 min-h-[34px] text-xs leading-relaxed text-gray-500">{recipe.description}</p>
+          {selectedRecipe ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => setSelectedRecipe(null)}
+                className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-600 transition-colors hover:bg-white"
+              >
+                {TEXT.backToList}
+              </button>
 
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {recipe.ingredients.map((ingredient) => (
-                    <span key={ingredient} className="rounded-full border border-gray-200 px-2 py-0.5 text-[10px] font-bold text-gray-500">
-                      {ingredient}
-                    </span>
-                  ))}
-                </div>
+              <div className="overflow-hidden rounded-xl border-2 border-sky-100 bg-white shadow-sm">
+                {selectedRecipe.imageUrl ? (
+                  <img
+                    src={selectedRecipe.imageUrl}
+                    alt={selectedRecipe.title}
+                    className="h-52 w-full object-cover sm:h-64"
+                  />
+                ) : (
+                  <div className="flex h-40 items-center justify-center bg-sky-50 text-sm font-bold text-sky-300">
+                    {TEXT.noImage}
+                  </div>
+                )}
 
-                <div className="mt-3 flex flex-wrap gap-1 border-t border-sky-50 pt-3">
-                  {recipe.tags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
-                      {tag}
-                    </span>
-                  ))}
+                <div className="p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-lg font-bold text-gray-800">{selectedRecipe.title}</h3>
+                    <div className="flex flex-wrap gap-1">
+                      <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-600">{selectedRecipe.method}</span>
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600">
+                        {getCalorieText(selectedRecipe.calories)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <section className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-3">
+                    <h4 className="mb-2 text-sm font-bold text-sky-700">{TEXT.ingredientInfo}</h4>
+                    <p className="whitespace-pre-line text-xs leading-relaxed text-gray-600">{selectedRecipe.ingredientText}</p>
+                  </section>
+
+                  <section className="rounded-xl border border-sky-100 bg-white p-3">
+                    <h4 className="mb-2 text-sm font-bold text-sky-700">{TEXT.cookingMethod}</h4>
+                    <ol className="space-y-2">
+                      {selectedRecipe.manualSteps.map((step) => (
+                        <li key={step} className="rounded-lg bg-gray-50 p-2 text-xs leading-relaxed text-gray-600">
+                          {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
                 </div>
-              </article>
-            ))}
-          </div>
+              </div>
+            </div>
+          ) : isLoading ? (
+            <div className="flex min-h-[220px] items-center justify-center rounded-xl border-2 border-dashed border-sky-100 bg-sky-50 text-sm font-bold text-sky-500">
+              {TEXT.loading}
+            </div>
+          ) : errorMessage ? (
+            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-sky-100 bg-sky-50 px-4 text-center">
+              <p className="text-sm font-bold text-sky-600">{errorMessage}</p>
+              <p className="mt-2 text-xs font-bold leading-relaxed text-gray-400">
+                {TEXT.retryGuide}
+              </p>
+            </div>
+          ) : recipes.length === 0 ? (
+            <div className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-sky-100 bg-sky-50 px-4 text-center">
+              <p className="text-sm font-bold text-sky-600">{TEXT.noList}</p>
+              <p className="mt-2 text-xs font-bold leading-relaxed text-gray-400">
+                {TEXT.emptyGuide}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {recipes.map((recipe) => (
+                <button
+                  key={recipe.id}
+                  type="button"
+                  onClick={() => setSelectedRecipe(recipe)}
+                  className="rounded-xl border-2 border-sky-100 bg-white p-3 text-left shadow-sm transition-all hover:border-sky-300 hover:shadow-md"
+                >
+                  <div className="grid gap-3 sm:grid-cols-[112px_minmax(0,1fr)]">
+                    {recipe.imageUrl ? (
+                      <img
+                        src={recipe.imageUrl}
+                        alt={recipe.title}
+                        className="h-28 w-full rounded-lg object-cover sm:h-full"
+                      />
+                    ) : (
+                      <div className="flex h-28 items-center justify-center rounded-lg bg-sky-50 text-xs font-bold text-sky-300">
+                        {TEXT.noImage}
+                      </div>
+                    )}
+
+                    <div className="min-w-0">
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="truncate text-base font-bold text-gray-800">{recipe.title}</h3>
+                          <p className="mt-1 truncate text-xs font-bold text-gray-400">
+                            {recipe.sourceIngredients.join(', ')} {TEXT.basedOn}
+                          </p>
+                        </div>
+                        <div className="flex flex-shrink-0 flex-col items-end gap-1">
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
+                            {getCalorieText(recipe.calories)}
+                          </span>
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                              recipe.missingIngredients.length === 0
+                                ? 'bg-sky-50 text-sky-600'
+                                : 'bg-amber-50 text-amber-600'
+                            }`}
+                          >
+                            {recipe.missingIngredients.length === 0
+                              ? TEXT.readyToCook
+                              : `${TEXT.missing} ${recipe.missingIngredients.length}${TEXT.countSuffix}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {recipe.ingredientKeywords.slice(0, 8).map((ingredient) => {
+                          const isMatched = recipe.matchedIngredients.includes(ingredient);
+
+                          return (
+                            <span
+                              key={ingredient}
+                              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                                isMatched
+                                  ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
+                                  : 'border-gray-200 bg-gray-50 text-gray-400'
+                              }`}
+                            >
+                              {ingredient}
+                            </span>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-3 border-t border-sky-50 pt-3">
+                        <p className="mb-1 text-[10px] font-bold text-gray-400">{TEXT.missingIngredients}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {recipe.missingIngredients.length === 0 ? (
+                            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-600">{TEXT.none}</span>
+                          ) : (
+                            recipe.missingIngredients.slice(0, 6).map((ingredient) => (
+                              <span key={ingredient} className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600">
+                                {ingredient}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>

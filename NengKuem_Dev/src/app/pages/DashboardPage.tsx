@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from 'react';
+import { useMemo, useState, type DragEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
@@ -9,6 +9,7 @@ import { OptionMenuPanel, type OptionMenuItemId } from '../components/layout/Opt
 import { SettingsPanel } from '../components/layout/SettingsPanel';
 import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
+import type { RecipeIngredientInput } from '../types/recipe';
 import { getExpiryDdayInfo } from '../utils/expiryStatus';
 
 const emptyDetailForm: ItemDetailFormValues = {
@@ -107,6 +108,13 @@ export function DashboardPage() {
     expirySort,
   );
   const emptyStorageMessage = expiryFilter === 'all' ? '아직 등록된 식재료가 없습니다.' : '조건에 맞는 식재료가 없습니다.';
+  const recipeIngredients: RecipeIngredientInput[] = useMemo(
+    () => [...fridgeItems, ...freezerItems].map((item) => ({
+      id: item.uniqueId,
+      name: item.customName || item.name,
+    })),
+    [fridgeItems, freezerItems],
+  );
 
   const addFoodToSection = (food: FoodItem, section: StorageSection) => {
     const newItem = createStoredItem(food, section);
@@ -436,6 +444,7 @@ export function DashboardPage() {
 
       <RecipeListPanel
         isOpen={isRecipePanelOpen}
+        ingredients={recipeIngredients}
         onClose={() => setIsRecipePanelOpen(false)}
       />
 
