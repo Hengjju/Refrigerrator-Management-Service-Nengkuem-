@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { FoodIcon } from './FoodIcon';
 import type { StoredFoodItem, StorageSection } from '../../types/ingredient';
-import { formatExpiryDate, getExpiryDdayInfo } from '../../utils/expiryStatus';
+import { formatExpiryDate, getExpiryDdayInfo, type ExpiryStatus } from '../../utils/expiryStatus';
 
 interface StorageListPanelProps {
   section: StorageSection;
@@ -15,6 +15,24 @@ interface StorageListPanelProps {
 
 function getSectionLabel(section: StorageSection) {
   return section === 'freezer' ? '냉동 칸' : '냉장 칸';
+}
+
+function getDdayBadgeClass(status: ExpiryStatus) {
+  if (status === 'expired') return 'border-red-200 bg-red-50 text-red-600';
+  if (status === 'today') return 'border-orange-200 bg-orange-50 text-orange-600';
+  if (status === 'urgent') return 'border-amber-200 bg-amber-50 text-amber-700';
+  if (status === 'soon') return 'border-yellow-200 bg-yellow-50 text-yellow-700';
+
+  return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+}
+
+function getStatusLabelClass(status: ExpiryStatus) {
+  if (status === 'expired') return 'bg-red-100 text-red-600';
+  if (status === 'today') return 'bg-orange-100 text-orange-600';
+  if (status === 'urgent') return 'bg-amber-100 text-amber-700';
+  if (status === 'soon') return 'bg-yellow-100 text-yellow-700';
+
+  return 'bg-emerald-100 text-emerald-700';
 }
 
 // 한 보관 칸에 들어 있는 식재료를 리스트로 보고, 선택 삭제까지 처리하는 패널입니다.
@@ -125,6 +143,7 @@ export function StorageListPanel({ section, title, items, onSelectItem, onDelete
                 const ddayInfo = getExpiryDdayInfo(item.expiryDate);
                 const isSelected = selectedIds.includes(item.uniqueId);
                 const expiryDateLabel = formatExpiryDate(item.expiryDate) || '유통기한 미입력';
+                const expiryDateClass = ddayInfo ? getStatusLabelClass(ddayInfo.status) : 'bg-sky-50 text-sky-600';
 
                 return (
                   <button
@@ -170,12 +189,19 @@ export function StorageListPanel({ section, title, items, onSelectItem, onDelete
                     </div>
 
                     <div className="flex flex-col items-end gap-1">
-                      <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-600">
-                        {expiryDateLabel}
-                      </span>
+                      <div className="flex flex-wrap justify-end gap-1">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${expiryDateClass}`}>
+                          {expiryDateLabel}
+                        </span>
+                        {ddayInfo && (
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${getDdayBadgeClass(ddayInfo.status)}`}>
+                            {ddayInfo.label}
+                          </span>
+                        )}
+                      </div>
                       {ddayInfo && (
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                          {ddayInfo.label}
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${getStatusLabelClass(ddayInfo.status)}`}>
+                          {ddayInfo.statusLabel}
                         </span>
                       )}
                     </div>
