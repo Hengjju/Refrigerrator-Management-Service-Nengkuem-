@@ -4,6 +4,7 @@ import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
 import { ItemDetailPanel, type ItemDetailFormValues } from '../components/fridge/ItemDetailPanel';
 import { StorageZone } from '../components/fridge/StorageZone';
+import { RecipeListPanel } from '../components/recipe/RecipeListPanel';
 import { OptionMenuPanel, type OptionMenuItemId } from '../components/layout/OptionMenuPanel';
 import { SettingsPanel } from '../components/layout/SettingsPanel';
 import type { FoodItem } from '../types/food';
@@ -85,6 +86,7 @@ export function DashboardPage() {
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isOptionMenuOpen, setIsOptionMenuOpen] = useState(false);
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
+  const [isRecipePanelOpen, setIsRecipePanelOpen] = useState(false);
   const [isCustomFoodModalOpen, setIsCustomFoodModalOpen] = useState(false);
   const [activeOptionMenu, setActiveOptionMenu] = useState<OptionMenuItemId>('dashboard');
   const [dragOverSection, setDragOverSection] = useState<StorageSection | null>(null);
@@ -192,6 +194,14 @@ export function DashboardPage() {
   const handleChangeExpirySort = (nextSort: ExpirySort) => {
     setExpirySort(nextSort);
     setIsSortMenuOpen(false);
+  };
+  const handleSelectOptionMenu = (itemId: OptionMenuItemId) => {
+    setActiveOptionMenu(itemId);
+    setIsOptionMenuOpen(false);
+
+    if (itemId === 'recipes') {
+      setIsRecipePanelOpen(true);
+    }
   };
 
   const handleSaveItemDetail = () => {
@@ -420,8 +430,13 @@ export function DashboardPage() {
       <OptionMenuPanel
         isOpen={isOptionMenuOpen}
         activeItemId={activeOptionMenu}
-        onSelectItem={setActiveOptionMenu}
+        onSelectItem={handleSelectOptionMenu}
         onClose={() => setIsOptionMenuOpen(false)}
+      />
+
+      <RecipeListPanel
+        isOpen={isRecipePanelOpen}
+        onClose={() => setIsRecipePanelOpen(false)}
       />
 
       <SettingsPanel
