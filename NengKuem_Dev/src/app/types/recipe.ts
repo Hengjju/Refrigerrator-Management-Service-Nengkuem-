@@ -1,4 +1,4 @@
-﻿// Ingredient data passed from the fridge screen to the recipe search panel.
+// Ingredient data passed from the fridge screen to the recipe search panel.
 export interface RecipeIngredientInput {
   id: string;
   name: string;
@@ -17,4 +17,13 @@ export interface RecipeRecommendation {
   matchedIngredients: string[];
   missingIngredients: string[];
   manualSteps: string[];
+}
+
+// One API batch used by the recipe modal pagination.
+export interface RecipeRecommendationPageResult {
+  recipes: RecipeRecommendation[];
+  page: number;
+  pageSize: number;
+  totalApiPages: number;
+  hasMore: boolean;
 }

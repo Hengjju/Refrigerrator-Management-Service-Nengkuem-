@@ -1,14 +1,15 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
-import type { RecipeIngredientInput, RecipeRecommendation } from '../types/recipe';
+import type { RecipeIngredientInput, RecipeRecommendation, RecipeRecommendationPageResult } from '../types/recipe';
 
 const FOOD_SAFETY_API_KEY = import.meta.env.VITE_FOODSAFETY_API_KEY?.trim();
 const FOOD_SAFETY_API_BASE_URL = 'https://openapi.foodsafetykorea.go.kr/api';
 const MAX_SEARCH_INGREDIENTS = 8;
-const SEARCH_RESULT_RANGE = '1/30';
 const MANUAL_STEP_COUNT = 20;
 const REQUEST_TIMEOUT_MS = 8000;
 const NO_INFO_TEXT = '\uC815\uBCF4 \uC5C6\uC74C';
+
+export const RECIPE_PAGE_SIZE = 12;
 
 const HANGUL_WORD_PATTERN = /[\uAC00-\uD7A3]{2,}/g;
 const INGREDIENT_STOP_WORDS = new Set([
@@ -51,6 +52,7 @@ type FoodSafetyRecipeRow = Record<string, string | undefined> & {
 
 interface FoodSafetyRecipeResponse {
   COOKRCP01?: {
+    total_count?: string | number;
     row?: FoodSafetyRecipeRow | FoodSafetyRecipeRow[];
     RESULT?: {
       CODE?: string;
@@ -59,12 +61,48 @@ interface FoodSafetyRecipeResponse {
   };
 }
 
+interface FoodSafetySearchResult {
+  rows: FoodSafetyRecipeRow[];
+  totalCount: number;
+}
+
 function normalizeText(value: string) {
   return value.trim().replace(/\s+/g, '').toLowerCase();
 }
 
 function uniqueValues(values: string[]) {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function getEmptyRecipePage(page: number, pageSize: number): RecipeRecommendationPageResult {
+  return {
+    recipes: [],
+    page,
+    pageSize,
+    totalApiPages: 1,
+    hasMore: false,
+  };
+}
+
+function getSafePage(value: number) {
+  return Math.max(1, Math.floor(value) || 1);
+}
+
+function getSafePageSize(value: number) {
+  return Math.max(1, Math.floor(value) || RECIPE_PAGE_SIZE);
+}
+
+function getSearchRange(page: number, pageSize: number) {
+  const startIndex = (page - 1) * pageSize + 1;
+  const endIndex = page * pageSize;
+
+  return `${startIndex}/${endIndex}`;
+}
+
+function getTotalCount(data: FoodSafetyRecipeResponse) {
+  const totalCount = Number(data.COOKRCP01?.total_count || 0);
+
+  return Number.isFinite(totalCount) ? totalCount : 0;
 }
 
 function isFoodSafetyRecipeResponse(data: unknown): data is FoodSafetyRecipeResponse {
@@ -200,94 +238,134 @@ function mergeRecipeRecommendation(
   };
 }
 
-async function fetchRecipesBySearchTerm(apiKey: string, searchTerm: string) {
+function compareRecipeRecommendations(firstRecipe: RecipeRecommendation, secondRecipe: RecipeRecommendation) {
+  const matchDiff = secondRecipe.matchedIngredients.length - firstRecipe.matchedIngredients.length;
+
+  if (matchDiff !== 0) return matchDiff;
+
+  const missingDiff = firstRecipe.missingIngredients.length - secondRecipe.missingIngredients.length;
+
+  if (missingDiff !== 0) return missingDiff;
+
+  const requiredDiff = firstRecipe.ingredientKeywords.length - secondRecipe.ingredientKeywords.length;
+
+  if (requiredDiff !== 0) return requiredDiff;
+
+  const sourceDiff = secondRecipe.sourceIngredients.length - firstRecipe.sourceIngredients.length;
+
+  if (sourceDiff !== 0) return sourceDiff;
+
+  return firstRecipe.title.localeCompare(secondRecipe.title, 'ko');
+}
+
+export function mergeRecipeRecommendationList(recipes: RecipeRecommendation[]) {
+  const recipesById = new Map<string, RecipeRecommendation>();
+
+  recipes.forEach((recipe) => {
+    const previousRecipe = recipesById.get(recipe.id);
+    recipesById.set(recipe.id, previousRecipe ? mergeRecipeRecommendation(previousRecipe, recipe) : recipe);
+  });
+
+  return [...recipesById.values()].sort(compareRecipeRecommendations);
+}
+
+async function fetchRecipesBySearchTerm(
+  apiKey: string,
+  searchTerm: string,
+  page: number,
+  pageSize: number,
+): Promise<FoodSafetySearchResult> {
   const encodedIngredient = encodeURIComponent(searchTerm);
-  const requestUrl = `${FOOD_SAFETY_API_BASE_URL}/${apiKey}/COOKRCP01/json/${SEARCH_RESULT_RANGE}/RCP_PARTS_DTLS=${encodedIngredient}`;
+  const requestUrl = `${FOOD_SAFETY_API_BASE_URL}/${apiKey}/COOKRCP01/json/${getSearchRange(page, pageSize)}/RCP_PARTS_DTLS=${encodedIngredient}`;
   const { data } = await axios.get<FoodSafetyRecipeResponse | string>(requestUrl, {
     timeout: REQUEST_TIMEOUT_MS,
   });
 
   if (typeof data === 'string') {
-    if (data.toLowerCase().includes('api key') || data.includes('INFO-200')) {
+    if (data.toLowerCase().includes('api key')) {
       throw new RecipeApiKeyError();
     }
 
-    return [];
+    return { rows: [], totalCount: 0 };
   }
 
-  if (!isFoodSafetyRecipeResponse(data)) return [];
+  if (!isFoodSafetyRecipeResponse(data)) return { rows: [], totalCount: 0 };
 
   const resultCode = data.COOKRCP01?.RESULT?.CODE;
 
-  if (resultCode === 'INFO-200') throw new RecipeApiKeyError();
-  if (resultCode && resultCode !== 'INFO-000') return [];
+  if (resultCode && resultCode !== 'INFO-000') return { rows: [], totalCount: 0 };
 
-  return getRecipeRows(data.COOKRCP01?.row);
+  return {
+    rows: getRecipeRows(data.COOKRCP01?.row),
+    totalCount: getTotalCount(data),
+  };
 }
 
-async function fetchRecipesByIngredient(apiKey: string, ingredientName: string) {
-  const rows: FoodSafetyRecipeRow[] = [];
+async function fetchRecipesByIngredient(
+  apiKey: string,
+  ingredientName: string,
+  page: number,
+  pageSize: number,
+): Promise<FoodSafetySearchResult> {
+  const searchResult: FoodSafetySearchResult = { rows: [], totalCount: 0 };
 
   for (const searchTerm of getSearchTerms(ingredientName)) {
     try {
-      rows.push(...await fetchRecipesBySearchTerm(apiKey, searchTerm));
+      const nextResult = await fetchRecipesBySearchTerm(apiKey, searchTerm, page, pageSize);
+
+      searchResult.rows.push(...nextResult.rows);
+      searchResult.totalCount = Math.max(searchResult.totalCount, nextResult.totalCount);
     } catch (error) {
       if (error instanceof RecipeApiKeyError) throw error;
     }
   }
 
-  return rows;
+  return searchResult;
 }
 
-// The panel searches one ingredient at a time, so one empty or failed ingredient does not block the others.
+// The panel searches one API page at a time, so the first recipe view can open quickly.
 export async function fetchRecipeRecommendations(
   ingredients: RecipeIngredientInput[],
-): Promise<RecipeRecommendation[]> {
+  page = 1,
+  pageSize = RECIPE_PAGE_SIZE,
+): Promise<RecipeRecommendationPageResult> {
   if (!FOOD_SAFETY_API_KEY) {
     throw new RecipeApiKeyError();
   }
 
   const apiKey = FOOD_SAFETY_API_KEY;
+  const safePage = getSafePage(page);
+  const safePageSize = getSafePageSize(pageSize);
   const currentIngredientNames = uniqueValues(ingredients.map((ingredient) => ingredient.name));
 
-  if (currentIngredientNames.length === 0) return [];
+  if (currentIngredientNames.length === 0) return getEmptyRecipePage(safePage, safePageSize);
 
-  const recipesById = new Map<string, RecipeRecommendation>();
+  const recipes: RecipeRecommendation[] = [];
+  let maxTotalCount = 0;
 
   for (const ingredientName of currentIngredientNames.slice(0, MAX_SEARCH_INGREDIENTS)) {
     try {
-      const rows = await fetchRecipesByIngredient(apiKey, ingredientName);
+      const result = await fetchRecipesByIngredient(apiKey, ingredientName, safePage, safePageSize);
 
-      rows.forEach((row) => {
+      maxTotalCount = Math.max(maxTotalCount, result.totalCount);
+
+      result.rows.forEach((row) => {
         const recipe = mapRecipeRow(row, currentIngredientNames, ingredientName);
 
-        if (!recipe) return;
-
-        const previousRecipe = recipesById.get(recipe.id);
-        recipesById.set(recipe.id, previousRecipe ? mergeRecipeRecommendation(previousRecipe, recipe) : recipe);
+        if (recipe) recipes.push(recipe);
       });
     } catch (error) {
       if (error instanceof RecipeApiKeyError) throw error;
     }
   }
 
-  return [...recipesById.values()].sort((firstRecipe, secondRecipe) => {
-    const missingDiff = firstRecipe.missingIngredients.length - secondRecipe.missingIngredients.length;
+  const totalApiPages = Math.max(1, Math.ceil(maxTotalCount / safePageSize));
 
-    if (missingDiff !== 0) return missingDiff;
-
-    const sourceDiff = secondRecipe.sourceIngredients.length - firstRecipe.sourceIngredients.length;
-
-    if (sourceDiff !== 0) return sourceDiff;
-
-    const requiredDiff = firstRecipe.ingredientKeywords.length - secondRecipe.ingredientKeywords.length;
-
-    if (requiredDiff !== 0) return requiredDiff;
-
-    const matchDiff = secondRecipe.matchedIngredients.length - firstRecipe.matchedIngredients.length;
-
-    if (matchDiff !== 0) return matchDiff;
-
-    return firstRecipe.title.localeCompare(secondRecipe.title, 'ko');
-  });
+  return {
+    recipes: mergeRecipeRecommendationList(recipes),
+    page: safePage,
+    pageSize: safePageSize,
+    totalApiPages,
+    hasMore: safePage < totalApiPages,
+  };
 }

@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { fetchRecipeRecommendations } from '../../api/recipeApi';
+import { fetchRecipeRecommendations, mergeRecipeRecommendationList, RECIPE_PAGE_SIZE } from '../../api/recipeApi';
 import type { RecipeIngredientInput, RecipeRecommendation } from '../../types/recipe';
 
 interface RecipeListPanelProps {
@@ -13,7 +13,7 @@ const TEXT = {
   noInfo: '\uC815\uBCF4 \uC5C6\uC74C',
   title: '\uB808\uC2DC\uD53C \uCD94\uCC9C',
   detail: '\uB808\uC2DC\uD53C \uC0C1\uC138',
-  lowMissingOrder: '\uBD80\uC871\uD55C \uC7AC\uB8CC\uAC00 \uC801\uC740 \uC21C\uC11C',
+  matchedOrder: '\uBCF4\uC720 \uC7AC\uB8CC\uAC00 \uB9CE\uC740 \uC21C\uC11C',
   close: '\uB808\uC2DC\uD53C \uCD94\uCC9C \uB2EB\uAE30',
   backToList: '\uBAA9\uB85D\uC73C\uB85C',
   noImage: '\uC774\uBBF8\uC9C0 \uC5C6\uC74C',
@@ -29,32 +29,61 @@ const TEXT = {
   countSuffix: '\uAC1C',
   missingIngredients: '\uBD80\uC871\uD55C \uC7AC\uB8CC',
   none: '\uC5C6\uC74C',
+  previous: '\uC774\uC804',
+  next: '\uB2E4\uC74C',
+  pageSuffix: '\uD398\uC774\uC9C0',
+  loadingMore: '\uBD88\uB7EC\uC624\uB294 \uC911',
 };
 
 function getCalorieText(calories: string) {
   return calories === TEXT.noInfo ? calories : `${calories}kcal`;
 }
 
+function getPageItems(recipes: RecipeRecommendation[], page: number) {
+  const startIndex = (page - 1) * RECIPE_PAGE_SIZE;
+
+  return recipes.slice(startIndex, startIndex + RECIPE_PAGE_SIZE);
+}
+
+function getUiPageCount(recipes: RecipeRecommendation[]) {
+  return Math.max(1, Math.ceil(recipes.length / RECIPE_PAGE_SIZE));
+}
+
 // Modal panel shown when the recipe recommendation option is selected.
 export function RecipeListPanel({ isOpen, ingredients, onClose }: RecipeListPanelProps) {
   const [recipes, setRecipes] = useState<RecipeRecommendation[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<RecipeRecommendation | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadedApiPage, setLoadedApiPage] = useState(0);
+  const [totalApiPages, setTotalApiPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const visibleRecipes = useMemo(() => getPageItems(recipes, currentPage), [recipes, currentPage]);
+  const loadedUiPageCount = getUiPageCount(recipes);
+  const canGoPrevious = currentPage > 1;
+  const canGoNext = currentPage < loadedUiPageCount || loadedApiPage < totalApiPages;
 
   useEffect(() => {
     if (!isOpen) return;
 
     let isCanceled = false;
     setIsLoading(true);
+    setIsPageLoading(false);
     setErrorMessage('');
     setSelectedRecipe(null);
+    setCurrentPage(1);
+    setLoadedApiPage(0);
+    setTotalApiPages(1);
 
-    fetchRecipeRecommendations(ingredients)
-      .then((nextRecipes) => {
+    fetchRecipeRecommendations(ingredients, 1, RECIPE_PAGE_SIZE)
+      .then((result) => {
         if (isCanceled) return;
 
-        setRecipes(nextRecipes);
+        setRecipes(result.recipes);
+        setLoadedApiPage(result.page);
+        setTotalApiPages(result.totalApiPages);
       })
       .catch(() => {
         if (isCanceled) return;
@@ -73,6 +102,55 @@ export function RecipeListPanel({ isOpen, ingredients, onClose }: RecipeListPane
     };
   }, [isOpen, ingredients]);
 
+  const handleGoPreviousPage = () => {
+    setSelectedRecipe(null);
+    setCurrentPage((prevPage) => Math.max(1, prevPage - 1));
+  };
+
+  const handleGoNextPage = async () => {
+    if (!canGoNext || isPageLoading) return;
+
+    const targetPage = currentPage + 1;
+
+    if (targetPage <= loadedUiPageCount) {
+      setSelectedRecipe(null);
+      setCurrentPage(targetPage);
+      return;
+    }
+
+    setIsPageLoading(true);
+    setErrorMessage('');
+
+    let nextRecipes = recipes;
+    let nextLoadedApiPage = loadedApiPage;
+    let nextTotalApiPages = totalApiPages;
+
+    try {
+      while (targetPage > getUiPageCount(nextRecipes) && nextLoadedApiPage < nextTotalApiPages) {
+        const result = await fetchRecipeRecommendations(ingredients, nextLoadedApiPage + 1, RECIPE_PAGE_SIZE);
+
+        nextLoadedApiPage = result.page;
+        nextTotalApiPages = result.totalApiPages;
+        nextRecipes = mergeRecipeRecommendationList([...nextRecipes, ...result.recipes]);
+
+        if (!result.hasMore && result.recipes.length === 0) break;
+      }
+
+      setRecipes(nextRecipes);
+      setLoadedApiPage(nextLoadedApiPage);
+      setTotalApiPages(nextTotalApiPages);
+
+      if (targetPage <= getUiPageCount(nextRecipes)) {
+        setSelectedRecipe(null);
+        setCurrentPage(targetPage);
+      }
+    } catch {
+      setErrorMessage(TEXT.noList);
+    } finally {
+      setIsPageLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -85,7 +163,7 @@ export function RecipeListPanel({ isOpen, ingredients, onClose }: RecipeListPane
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold text-sky-700">{TEXT.title}</h2>
             <p className="mt-0.5 truncate text-xs font-bold text-gray-400">
-              {selectedRecipe ? TEXT.detail : TEXT.lowMissingOrder}
+              {selectedRecipe ? TEXT.detail : TEXT.matchedOrder}
             </p>
           </div>
           <button
@@ -171,7 +249,7 @@ export function RecipeListPanel({ isOpen, ingredients, onClose }: RecipeListPane
             </div>
           ) : (
             <div className="grid gap-3">
-              {recipes.map((recipe) => (
+              {visibleRecipes.map((recipe) => (
                 <button
                   key={recipe.id}
                   type="button"
@@ -254,6 +332,28 @@ export function RecipeListPanel({ isOpen, ingredients, onClose }: RecipeListPane
                   </div>
                 </button>
               ))}
+
+              <div className="flex items-center justify-between rounded-xl border border-sky-100 bg-sky-50/70 px-3 py-2">
+                <button
+                  type="button"
+                  onClick={handleGoPreviousPage}
+                  disabled={!canGoPrevious || isPageLoading}
+                  className="rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-600 transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {TEXT.previous}
+                </button>
+                <span className="text-xs font-bold text-gray-500">
+                  {currentPage}{TEXT.pageSuffix}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void handleGoNextPage()}
+                  disabled={!canGoNext || isPageLoading}
+                  className="rounded-lg border border-sky-200 bg-white px-3 py-1.5 text-xs font-bold text-sky-600 transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isPageLoading ? TEXT.loadingMore : TEXT.next}
+                </button>
+              </div>
             </div>
           )}
         </div>
