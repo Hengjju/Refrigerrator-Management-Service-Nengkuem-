@@ -115,11 +115,11 @@ export function StorageZone({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex min-h-[260px] flex-col rounded-xl border-2 p-3 transition-all sm:min-h-0 sm:flex-1 sm:p-4 md:p-5 ${
+      className={`flex min-h-0 flex-1 flex-col rounded-xl border-2 p-2 transition-all sm:p-4 md:p-5 ${
         isDragOver ? 'border-emerald-400 bg-emerald-50 shadow-[0_0_0_3px_rgba(52,211,153,0.35)]' : 'border-sky-300 bg-sky-50'
       }`}
     >
-      <div className="mb-3 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center md:mb-4">
+      <div className="mb-2 grid flex-shrink-0 grid-cols-[1fr_auto_1fr] items-center sm:mb-3 md:mb-4">
         <span aria-hidden="true" />
         <h2 className="text-center text-xl font-bold text-sky-600 sm:text-2xl md:text-3xl">{title}</h2>
         {onOpenList && (
@@ -133,7 +133,7 @@ export function StorageZone({
         )}
       </div>
       <div
-        className={`min-h-0 flex-1 overflow-y-auto rounded-xl border-2 border-dashed p-3 transition-colors sm:p-4 ${
+        className={`min-h-0 flex-1 overflow-y-auto rounded-xl border-2 border-dashed p-2 transition-colors sm:p-4 ${
           isDragOver ? 'border-emerald-300 bg-emerald-50/80' : 'border-sky-200 bg-white/70'
         }`}
       >
@@ -164,7 +164,7 @@ export function StorageZone({
                       onSelectItem(item);
                     }
                   }}
-                  className={`relative flex min-h-[112px] cursor-grab flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[120px] ${cardStateClass}`}
+                  className={`relative flex min-h-[104px] cursor-grab flex-col items-center justify-center gap-1 rounded-lg border-2 p-2 transition-all hover:border-sky-400 hover:shadow-md active:cursor-grabbing sm:min-h-[120px] ${cardStateClass}`}
                   aria-label={`${displayName} 선택 또는 다른 칸으로 이동`}
                 >
                   {ddayInfo && (

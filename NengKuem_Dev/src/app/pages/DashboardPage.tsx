@@ -273,11 +273,11 @@ export function DashboardPage() {
 
   return (
     <div
-      className="min-h-screen w-full overflow-auto bg-gradient-to-br from-sky-50 to-white p-2 sm:p-4 md:p-6 lg:p-8"
+      className="h-[100dvh] w-full overflow-hidden bg-gradient-to-br from-sky-50 to-white p-1.5 sm:p-4 md:p-6 lg:p-8"
       style={{ fontFamily: "'Nanum Gothic', sans-serif" }}
     >
       <div className="mx-auto flex w-full max-w-[1320px] min-w-0 flex-col">
-        <header className="mb-2 flex flex-shrink-0 items-center justify-between sm:mb-4 md:mb-5">
+        <header className="mb-1.5 flex flex-shrink-0 items-center justify-between sm:mb-4 md:mb-5">
           <button
             type="button"
             onClick={() => setIsOptionMenuOpen(true)}
@@ -323,14 +323,14 @@ export function DashboardPage() {
           </button>
         </header>
 
-        <main className="min-h-[calc(100vh-82px)] rounded-2xl border-2 border-sky-700 bg-sky-600 p-2 shadow-xl sm:h-[calc(100vh-104px)] sm:min-h-[560px] sm:max-h-[680px] sm:p-4 md:p-5 lg:p-6">
-          <div className="flex h-full min-h-0 min-w-0 flex-col gap-2 sm:grid sm:grid-cols-[clamp(108px,13vw,180px)_minmax(0,1fr)] sm:gap-4 md:gap-5 lg:gap-6">
-            <aside className="min-h-0 min-w-0 sm:h-full">
-              <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white p-2 shadow-lg sm:h-full sm:p-3 md:p-4">
-                <div className="mb-2 text-center text-sm font-bold text-sky-600 sm:mb-3 sm:text-base md:text-lg">식재료</div>
+        <main className="h-[calc(100dvh-58px)] min-h-0 rounded-2xl border-2 border-sky-700 bg-sky-600 p-1.5 shadow-xl sm:h-[calc(100vh-104px)] sm:min-h-[560px] sm:max-h-[680px] sm:p-4 md:p-5 lg:p-6">
+          <div className="flex h-full min-h-0 min-w-0 flex-col gap-1.5 sm:grid sm:grid-cols-[clamp(108px,13vw,180px)_minmax(0,1fr)] sm:gap-4 md:gap-5 lg:gap-6">
+            <aside className="min-h-0 min-w-0 flex-shrink-0 sm:h-full">
+              <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border-2 border-sky-200 bg-white p-1.5 shadow-lg sm:h-full sm:p-3 md:p-4">
+                <div className="mb-1.5 text-center text-sm font-bold text-sky-600 sm:mb-3 sm:text-base md:text-lg">식재료</div>
 
                 <div
-                  className="grid max-h-[132px] grid-cols-3 gap-2 overflow-y-auto pr-0.5 scrollbar-hide sm:max-h-none sm:flex-1 sm:grid-cols-1 sm:gap-3 sm:pr-1"
+                  className="grid max-h-[92px] grid-cols-3 gap-2 overflow-y-auto pr-0.5 scrollbar-hide sm:max-h-none sm:flex-1 sm:grid-cols-1 sm:gap-3 sm:pr-1"
                   style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                   {foodCatalog.map((food) => (
@@ -363,7 +363,7 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsCustomFoodModalOpen(true)}
-                  className="mt-2 flex h-10 flex-shrink-0 items-center justify-center gap-1 rounded-xl border-2 border-sky-300 bg-sky-50 text-xs font-bold text-sky-600 transition-all hover:border-sky-400 hover:bg-white hover:shadow-sm sm:mt-3"
+                  className="mt-1.5 flex h-9 flex-shrink-0 items-center justify-center gap-1 rounded-xl border-2 border-sky-300 bg-sky-50 text-xs font-bold text-sky-600 transition-all hover:border-sky-400 hover:bg-white hover:shadow-sm sm:mt-3 sm:h-10"
                 >
                   <span className="text-lg leading-none">+</span>
                   <span className="whitespace-nowrap">식재료 추가</span>
@@ -371,9 +371,9 @@ export function DashboardPage() {
               </div>
             </aside>
 
-            <section className="min-h-0 min-w-0 overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-2 shadow-2xl sm:p-4 md:p-5 lg:p-6">
-              <div className="flex h-full min-h-0 flex-col gap-2 sm:gap-4 md:gap-5">
-                <div className="relative flex flex-shrink-0 items-center gap-2 rounded-xl border border-sky-200 bg-white/80 p-1.5 shadow-sm">
+            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-1.5 shadow-2xl sm:p-4 md:p-5 lg:p-6">
+              <div className="flex h-full min-h-0 flex-col gap-1.5 sm:gap-4 md:gap-5">
+                <div className="relative flex flex-shrink-0 items-center gap-1 rounded-xl border border-sky-200 bg-white/80 p-1 shadow-sm sm:gap-2 sm:p-1.5">
                   <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-hide sm:gap-1.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {EXPIRY_FILTER_OPTIONS.map((option) => {
                       const isActive = expiryFilter === option.value;
@@ -383,7 +383,7 @@ export function DashboardPage() {
                           key={option.value}
                           type="button"
                           onClick={() => handleChangeExpiryFilter(option.value)}
-                          className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors sm:px-3 sm:text-xs ${
+                          className={`shrink-0 whitespace-nowrap rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors sm:px-3 sm:text-xs ${
                             isActive
                               ? 'bg-sky-600 text-white shadow-sm'
                               : 'text-sky-600 hover:bg-sky-50 hover:text-sky-700'
@@ -399,7 +399,7 @@ export function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => setIsSortMenuOpen((prevOpen) => !prevOpen)}
-                      className="flex min-w-[82px] items-center justify-between gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100 sm:min-w-[94px] sm:px-3 sm:text-xs"
+                      className="flex min-w-[70px] shrink-0 items-center justify-between gap-1 whitespace-nowrap rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100 sm:min-w-[94px] sm:px-3 sm:text-xs"
                       aria-expanded={isSortMenuOpen}
                     >
                       <span>{activeSortLabel}</span>
