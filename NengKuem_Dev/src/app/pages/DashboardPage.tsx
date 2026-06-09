@@ -137,9 +137,13 @@ function createStoredItem(food: FoodItem, section: StorageSection): StoredFoodIt
   };
 }
 
+interface DashboardPageProps {
+  onLogout: () => void;
+}
+
 // 메인 냉장고 화면입니다.
 // 식재료를 원하는 칸에 드래그해서 추가하고, 상세 정보와 유통기한 표시를 관리합니다.
-export function DashboardPage() {
+export function DashboardPage({ onLogout }: DashboardPageProps) {
   const [expiryFilter, setExpiryFilter] = useState<ExpiryFilter>('all');
   const [expirySort, setExpirySort] = useState<ExpirySort>('default');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -778,6 +782,7 @@ export function DashboardPage() {
       <SettingsPanel
         isOpen={isSettingsPanelOpen}
         onClose={() => setIsSettingsPanelOpen(false)}
+        onLogout={onLogout}
       />
 
       {activeListSection && (

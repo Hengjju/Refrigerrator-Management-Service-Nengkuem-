@@ -1,11 +1,17 @@
 interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onLogout: () => void;
 }
 
 // 오른쪽 상단 톱니바퀴 버튼에서 열리는 계정/로그인 설정 패널입니다.
-export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ isOpen, onClose, onLogout }: SettingsPanelProps) {
   if (!isOpen) return null;
+
+  const handleLogout = () => {
+    onClose();
+    onLogout();
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/35" onClick={onClose}>
@@ -34,8 +40,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               N
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-gray-700">게스트 사용자</p>
-              <p className="mt-0.5 truncate text-xs font-bold text-gray-400">로그인 전</p>
+              <p className="truncate text-sm font-bold text-gray-700">냉큼 사용자</p>
+              <p className="mt-0.5 truncate text-xs font-bold text-gray-400">로그인됨</p>
             </div>
           </div>
 
@@ -49,8 +55,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             </button>
             <button
               type="button"
-              disabled
-              className="rounded-lg border-2 border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-400"
+              onClick={handleLogout}
+              className="rounded-lg border-2 border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-500 transition-colors hover:bg-red-50"
             >
               로그아웃하기
             </button>

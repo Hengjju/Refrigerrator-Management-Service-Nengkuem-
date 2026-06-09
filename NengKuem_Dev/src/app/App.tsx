@@ -33,6 +33,12 @@ export default function App() {
     navigate('/login');
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setLoginNoticeMessage('');
+    navigate('/login', { replace: true });
+  };
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to={isLoggedIn ? '/dashboard' : '/login'} replace />} />
@@ -62,7 +68,7 @@ export default function App() {
       />
       <Route
         path="/dashboard"
-        element={isLoggedIn ? <DashboardPage /> : <Navigate to="/login" replace />}
+        element={isLoggedIn ? <DashboardPage onLogout={handleLogout} /> : <Navigate to="/login" replace />}
       />
       <Route path="*" element={<Navigate to={isLoggedIn ? '/dashboard' : '/login'} replace />} />
     </Routes>
