@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState, type DragEvent, type TouchEvent as ReactTouchEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent, type TouchEvent as ReactTouchEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
@@ -13,6 +13,12 @@ import type { FoodItem } from '../types/food';
 import type { StoredFoodItem, StorageSection } from '../types/ingredient';
 import type { RecipeIngredientInput } from '../types/recipe';
 import { getExpiryDdayInfo } from '../utils/expiryStatus';
+import {
+  createIngredientItem,
+  deleteIngredientItems,
+  fetchUserIngredients,
+  updateIngredientItem,
+} from '../api/ingredientApi';
 
 const emptyDetailForm: ItemDetailFormValues = {
   name: '',
@@ -66,9 +72,9 @@ type MobileStoredDrag = MobileDragBase & {
 type MobileDragPreview = MobileFoodDrag | MobileStoredDrag;
 
 type MobileDragActions = {
-  dropFood: (foodId: string, section: StorageSection) => void;
-  moveStoredItem: (itemId: string, section: StorageSection) => void;
-  deleteItem: (item: StoredFoodItem) => void;
+  dropFood: (foodId: string, section: StorageSection) => void | Promise<void>;
+  moveStoredItem: (itemId: string, section: StorageSection) => void | Promise<void>;
+  deleteItem: (item: StoredFoodItem) => void | Promise<void>;
 };
 
 function getStorageSectionFromPoint(x: number, y: number): StorageSection | null {
@@ -129,16 +135,20 @@ function sortItemsByExpiry(items: StoredFoodItem[], sort: ExpirySort) {
   });
 }
 
-function createStoredItem(food: FoodItem, section: StorageSection): StoredFoodItem {
+
+function getDashboardErrorMessage(error: unknown, fallbackMessage: string) {
+  return error instanceof Error ? error.message : fallbackMessage;
+}
+
+function splitItemsBySection(items: StoredFoodItem[]) {
   return {
-    ...food,
-    uniqueId: `${section}-${food.id}-${Date.now()}`,
-    section,
+    freezer: items.filter((item) => item.section === 'freezer'),
+    fridge: items.filter((item) => item.section === 'fridge'),
   };
 }
 
 interface DashboardPageProps {
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
 }
 
 // 메인 냉장고 화면입니다.
@@ -159,6 +169,8 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
   const [selectedItem, setSelectedItem] = useState<StoredFoodItem | null>(null);
   const [detailForm, setDetailForm] = useState<ItemDetailFormValues>(emptyDetailForm);
   const [mobileDragPreview, setMobileDragPreview] = useState<MobileDragPreview | null>(null);
+  const [isIngredientStorageLoading, setIsIngredientStorageLoading] = useState(true);
+  const [ingredientStorageMessage, setIngredientStorageMessage] = useState('');
   const pendingMobileDragRef = useRef<MobileDragPreview | null>(null);
   const activeMobileDragRef = useRef<MobileDragPreview | null>(null);
   const mobileDragTimerRef = useRef<number | null>(null);
@@ -186,15 +198,87 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
     [fridgeItems, freezerItems],
   );
 
-  const addFoodToSection = (food: FoodItem, section: StorageSection) => {
-    const newItem = createStoredItem(food, section);
+  useEffect(() => {
+    let isActive = true;
 
-    if (section === 'freezer') {
-      setFreezerItems((prevItems) => [...prevItems, newItem]);
+    setIsIngredientStorageLoading(true);
+    setIngredientStorageMessage('');
+
+    fetchUserIngredients()
+      .then((items) => {
+        if (!isActive) return;
+
+        const nextItems = splitItemsBySection(items);
+        setFreezerItems(nextItems.freezer);
+        setFridgeItems(nextItems.fridge);
+      })
+      .catch((error) => {
+        if (!isActive) return;
+
+        setIngredientStorageMessage(
+          getDashboardErrorMessage(error, '식재료 저장소를 불러오지 못했습니다.'),
+        );
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsIngredientStorageLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const addSavedItemToState = (item: StoredFoodItem) => {
+    if (item.section === 'freezer') {
+      setFreezerItems((prevItems) => [...prevItems, item]);
       return;
     }
 
-    setFridgeItems((prevItems) => [...prevItems, newItem]);
+    setFridgeItems((prevItems) => [...prevItems, item]);
+  };
+
+  const syncSavedItemInState = (savedItem: StoredFoodItem) => {
+    const syncSectionItems = (items: StoredFoodItem[], section: StorageSection) => {
+      const itemsWithoutSavedItem = items.filter((item) => item.uniqueId !== savedItem.uniqueId);
+
+      if (savedItem.section !== section) {
+        return itemsWithoutSavedItem;
+      }
+
+      const originalIndex = items.findIndex((item) => item.uniqueId === savedItem.uniqueId);
+      if (originalIndex === -1) {
+        return [...itemsWithoutSavedItem, savedItem];
+      }
+
+      const nextItems = [...itemsWithoutSavedItem];
+      nextItems.splice(originalIndex, 0, savedItem);
+      return nextItems;
+    };
+
+    setFreezerItems((prevItems) => syncSectionItems(prevItems, 'freezer'));
+    setFridgeItems((prevItems) => syncSectionItems(prevItems, 'fridge'));
+    setSelectedItem((prevItem) => (prevItem?.uniqueId === savedItem.uniqueId ? savedItem : prevItem));
+  };
+
+  const removeItemsFromState = (itemIds: string[]) => {
+    setFreezerItems((prevItems) => prevItems.filter((item) => !itemIds.includes(item.uniqueId)));
+    setFridgeItems((prevItems) => prevItems.filter((item) => !itemIds.includes(item.uniqueId)));
+  };
+
+  const addFoodToSection = async (food: FoodItem, section: StorageSection) => {
+    try {
+      setIngredientStorageMessage('');
+      const newItem = await createIngredientItem(food, section);
+      addSavedItemToState(newItem);
+      return true;
+    } catch (error) {
+      setIngredientStorageMessage(
+        getDashboardErrorMessage(error, '식재료를 저장하지 못했습니다.'),
+      );
+      return false;
+    }
   };
 
   const handleFoodDragStart = (event: DragEvent<HTMLButtonElement>, food: FoodItem) => {
@@ -209,10 +293,10 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
 
     if (!food) return;
 
-    addFoodToSection(food, section);
+    void addFoodToSection(food, section);
   };
 
-  const handleCreateCustomFood = (name: string, emoji: string, section: StorageSection, iconSrc?: string) => {
+  const handleCreateCustomFood = async (name: string, emoji: string, section: StorageSection, iconSrc?: string) => {
     const newFood: FoodItem = {
       id: `custom-${Date.now()}`,
       name,
@@ -220,31 +304,27 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
       iconSrc,
     };
 
-    addFoodToSection(newFood, section);
-    setIsCustomFoodModalOpen(false);
+    const didCreate = await addFoodToSection(newFood, section);
+    if (didCreate) {
+      setIsCustomFoodModalOpen(false);
+    }
   };
 
-  const handleMoveStoredItem = (itemId: string, targetSection: StorageSection) => {
+  const handleMoveStoredItem = async (itemId: string, targetSection: StorageSection) => {
     const itemToMove = [...freezerItems, ...fridgeItems].find((item) => item.uniqueId === itemId);
     setDragOverSection(null);
 
     if (!itemToMove || itemToMove.section === targetSection) return;
 
-    const movedItem: StoredFoodItem = { ...itemToMove, section: targetSection };
-
-    if (itemToMove.section === 'freezer') {
-      setFreezerItems((prevItems) => prevItems.filter((item) => item.uniqueId !== itemId));
-    } else {
-      setFridgeItems((prevItems) => prevItems.filter((item) => item.uniqueId !== itemId));
+    try {
+      setIngredientStorageMessage('');
+      const movedItem = await updateIngredientItem(itemId, { section: targetSection });
+      syncSavedItemInState(movedItem);
+    } catch (error) {
+      setIngredientStorageMessage(
+        getDashboardErrorMessage(error, '식재료 위치를 저장하지 못했습니다.'),
+      );
     }
-
-    if (targetSection === 'freezer') {
-      setFreezerItems((prevItems) => [...prevItems, movedItem]);
-    } else {
-      setFridgeItems((prevItems) => [...prevItems, movedItem]);
-    }
-
-    setSelectedItem((prevItem) => (prevItem?.uniqueId === itemId ? movedItem : prevItem));
   };
 
   const handleSelectItem = (item: StoredFoodItem) => {
@@ -288,58 +368,64 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
     }
   };
 
-  const handleSaveItemDetail = () => {
+  const handleSaveItemDetail = async () => {
     if (!selectedItem) return;
 
     const nextName = detailForm.name.trim() || selectedItem.name;
     const nextExpiryDate = detailForm.expiryDate || undefined;
     const nextMemo = detailForm.memo.trim() || undefined;
-    const updateItems = (items: StoredFoodItem[]) =>
-      items.map((item) =>
-        item.uniqueId === selectedItem.uniqueId
-          ? { ...item, customName: nextName, expiryDate: nextExpiryDate, memo: nextMemo }
-          : item,
+
+    try {
+      setIngredientStorageMessage('');
+      const savedItem = await updateIngredientItem(selectedItem.uniqueId, {
+        section: selectedItem.section,
+        customName: nextName,
+        expiryDate: nextExpiryDate,
+        memo: nextMemo,
+      });
+      syncSavedItemInState(savedItem);
+      handleCloseDetailPanel();
+    } catch (error) {
+      setIngredientStorageMessage(
+        getDashboardErrorMessage(error, '식재료 상세 정보를 저장하지 못했습니다.'),
       );
-
-    if (selectedItem.section === 'freezer') {
-      setFreezerItems(updateItems);
-    } else {
-      setFridgeItems(updateItems);
     }
-
-    handleCloseDetailPanel();
   };
 
-  const handleDeleteItems = (section: StorageSection, itemIds: string[]) => {
+  const handleDeleteItems = async (_section: StorageSection, itemIds: string[]) => {
     if (itemIds.length === 0) return;
 
-    if (selectedItem && itemIds.includes(selectedItem.uniqueId)) {
-      handleCloseDetailPanel();
-    }
+    try {
+      setIngredientStorageMessage('');
+      await deleteIngredientItems(itemIds);
 
-    if (section === 'freezer') {
-      setFreezerItems((prevItems) => prevItems.filter((item) => !itemIds.includes(item.uniqueId)));
-      return;
-    }
+      if (selectedItem && itemIds.includes(selectedItem.uniqueId)) {
+        handleCloseDetailPanel();
+      }
 
-    setFridgeItems((prevItems) => prevItems.filter((item) => !itemIds.includes(item.uniqueId)));
+      removeItemsFromState(itemIds);
+    } catch (error) {
+      setIngredientStorageMessage(
+        getDashboardErrorMessage(error, '선택한 식재료를 삭제하지 못했습니다.'),
+      );
+    }
   };
 
-  const handleDeleteItem = (itemToDelete: StoredFoodItem) => {
-    if (selectedItem?.uniqueId === itemToDelete.uniqueId) {
-      handleCloseDetailPanel();
-    }
+  const handleDeleteItem = async (itemToDelete: StoredFoodItem) => {
+    try {
+      setIngredientStorageMessage('');
+      await deleteIngredientItems([itemToDelete.uniqueId]);
 
-    if (itemToDelete.section === 'freezer') {
-      setFreezerItems((prevItems) =>
-        prevItems.filter((item) => item.uniqueId !== itemToDelete.uniqueId),
+      if (selectedItem?.uniqueId === itemToDelete.uniqueId) {
+        handleCloseDetailPanel();
+      }
+
+      removeItemsFromState([itemToDelete.uniqueId]);
+    } catch (error) {
+      setIngredientStorageMessage(
+        getDashboardErrorMessage(error, '식재료를 삭제하지 못했습니다.'),
       );
-      return;
     }
-
-    setFridgeItems((prevItems) =>
-      prevItems.filter((item) => item.uniqueId !== itemToDelete.uniqueId),
-    );
   };
 
   mobileDragActionsRef.current = {
@@ -701,12 +787,26 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
                   </div>
                 </div>
 
+
+
+                {(isIngredientStorageLoading || ingredientStorageMessage) && (
+                  <div
+                    className={`flex-shrink-0 rounded-xl border px-3 py-2 text-center text-[11px] font-bold sm:text-xs ${
+                      ingredientStorageMessage
+                        ? 'border-red-200 bg-red-50 text-red-500'
+                        : 'border-sky-200 bg-sky-50 text-sky-600'
+                    }`}
+                  >
+                    {ingredientStorageMessage || '식재료 저장소를 불러오는 중입니다.'}
+                  </div>
+                )}
+
                 <StorageZone
                   section="freezer"
                   title="냉동 칸"
                   items={filteredFreezerItems}
                   selectedItemId={selectedItem?.uniqueId}
-                  emptyMessage={emptyStorageMessage}
+                  emptyMessage={isIngredientStorageLoading ? '식재료 저장소를 불러오는 중입니다.' : emptyStorageMessage}
                   isDragOver={dragOverSection === 'freezer'}
                   onDragEnterSection={setDragOverSection}
                   onDragLeaveSection={() => setDragOverSection(null)}
@@ -722,7 +822,7 @@ export function DashboardPage({ onLogout }: DashboardPageProps) {
                   title="냉장 칸"
                   items={filteredFridgeItems}
                   selectedItemId={selectedItem?.uniqueId}
-                  emptyMessage={emptyStorageMessage}
+                  emptyMessage={isIngredientStorageLoading ? '식재료 저장소를 불러오는 중입니다.' : emptyStorageMessage}
                   isDragOver={dragOverSection === 'fridge'}
                   onDragEnterSection={setDragOverSection}
                   onDragLeaveSection={() => setDragOverSection(null)}

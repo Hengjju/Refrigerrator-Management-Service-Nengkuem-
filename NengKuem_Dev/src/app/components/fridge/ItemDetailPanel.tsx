@@ -11,8 +11,8 @@ interface ItemDetailPanelProps {
   item: StoredFoodItem;
   values: ItemDetailFormValues;
   onChange: (values: ItemDetailFormValues) => void;
-  onSave: () => void;
-  onDelete: () => void;
+  onSave: () => void | Promise<void>;
+  onDelete: () => void | Promise<void>;
   onClose: () => void;
 }
 

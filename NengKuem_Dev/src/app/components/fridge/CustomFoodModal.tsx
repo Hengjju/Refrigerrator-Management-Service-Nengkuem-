@@ -17,7 +17,7 @@ interface IconCategory {
 
 interface CustomFoodModalProps {
   isOpen: boolean;
-  onCreate: (name: string, emoji: string, section: StorageSection, iconSrc?: string) => void;
+  onCreate: (name: string, emoji: string, section: StorageSection, iconSrc?: string) => void | Promise<void>;
   onClose: () => void;
 }
 

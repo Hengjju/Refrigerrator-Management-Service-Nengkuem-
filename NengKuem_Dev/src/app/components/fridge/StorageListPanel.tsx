@@ -9,7 +9,7 @@ interface StorageListPanelProps {
   title: string;
   items: StoredFoodItem[];
   onSelectItem: (item: StoredFoodItem) => void;
-  onDeleteItems: (section: StorageSection, itemIds: string[]) => void;
+  onDeleteItems: (section: StorageSection, itemIds: string[]) => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -66,10 +66,10 @@ export function StorageListPanel({ section, title, items, onSelectItem, onDelete
     setSelectedIds(isAllSelected ? [] : selectableIds);
   };
 
-  const handleDeleteSelectedItems = () => {
+  const handleDeleteSelectedItems = async () => {
     if (selectedIds.length === 0) return;
 
-    onDeleteItems(section, selectedIds);
+    await onDeleteItems(section, selectedIds);
     setSelectedIds([]);
   };
 

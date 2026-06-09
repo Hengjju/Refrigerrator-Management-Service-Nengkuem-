@@ -16,10 +16,10 @@ interface StorageZoneProps {
   isDragOver?: boolean;
   onDragEnterSection?: (section: StorageSection) => void;
   onDragLeaveSection?: (section: StorageSection) => void;
-  onDropFood?: (foodId: string, section: StorageSection) => void;
-  onDropStoredItem?: (itemId: string, section: StorageSection) => void;
+  onDropFood?: (foodId: string, section: StorageSection) => void | Promise<void>;
+  onDropStoredItem?: (itemId: string, section: StorageSection) => void | Promise<void>;
   onSelectItem: (item: StoredFoodItem) => void;
-  onDeleteItem: (item: StoredFoodItem) => void;
+  onDeleteItem: (item: StoredFoodItem) => void | Promise<void>;
   onStartMobileDragItem?: (event: ReactTouchEvent<HTMLDivElement>, item: StoredFoodItem) => void;
   onOpenList?: (section: StorageSection) => void;
 }
