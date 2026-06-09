@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type TouchEvent as ReactTouchEvent } from 'react';
+﻿import { useEffect, useMemo, useRef, useState, type DragEvent, type TouchEvent as ReactTouchEvent } from 'react';
 
 import { AVAILABLE_FOODS } from '../constants/foodCategories';
 import { CustomFoodModal } from '../components/fridge/CustomFoodModal';
@@ -640,7 +640,7 @@ export function DashboardPage() {
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border-2 border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 p-1.5 shadow-2xl sm:p-4 md:p-5 lg:p-6">
               <div className="flex h-full min-h-0 flex-col gap-1.5 sm:gap-4 md:gap-5">
                 <div className="relative flex flex-shrink-0 items-center gap-1 rounded-xl border border-sky-200 bg-white/80 p-1 shadow-sm sm:gap-2 sm:p-1.5">
-                  <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-hide sm:gap-1.5" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  <div className="font-bold flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-hide sm:gap-1.5 " style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {EXPIRY_FILTER_OPTIONS.map((option) => {
                       const isActive = expiryFilter === option.value;
 
