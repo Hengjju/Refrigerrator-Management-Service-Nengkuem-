@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react';
 
+import type { RegisterRequest } from '../api/authApi';
+
 interface RegisterPageProps {
   onBackToLogin: () => void;
-  onRegister: () => void;
+  onRegister: (values: RegisterRequest) => Promise<void>;
 }
 
 // 회원가입 화면입니다.
-// 백엔드 인증이 연결되기 전까지는 입력 상태와 화면 전환 흐름만 처리합니다.
+// 입력 상태를 검증한 뒤 Supabase 회원가입 API 호출을 App에 요청합니다.
 export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
@@ -14,17 +16,48 @@ export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(true);
   const [formMessage, setFormMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (password && passwordConfirm && password !== passwordConfirm) {
+    const trimmedNickname = nickname.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !password.trim() || !passwordConfirm.trim()) {
+      setFormMessage('이메일과 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setFormMessage('비밀번호는 6자리 이상으로 입력해주세요.');
+      return;
+    }
+
+    if (password !== passwordConfirm) {
       setFormMessage('비밀번호가 서로 달라요.');
       return;
     }
 
+    if (!agreeTerms) {
+      setFormMessage('약관 동의가 필요합니다.');
+      return;
+    }
+
     setFormMessage('');
-    onRegister();
+    setIsSubmitting(true);
+
+    try {
+      await onRegister({
+        nickname: trimmedNickname,
+        email: trimmedEmail,
+        password,
+      });
+    } catch (error) {
+      setFormMessage(error instanceof Error ? error.message : '회원가입 중 문제가 생겼습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -87,7 +120,10 @@ export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
               <input
                 type="text"
                 value={nickname}
-                onChange={(event) => setNickname(event.target.value)}
+                onChange={(event) => {
+                  setNickname(event.target.value);
+                  setFormMessage('');
+                }}
                 placeholder="냉장고 이름 또는 닉네임"
                 className="h-12 w-full rounded-2xl border-2 border-sky-100 bg-sky-50/50 px-4 text-sm font-bold text-gray-700 outline-none transition-colors placeholder:text-gray-300 focus:border-sky-400 focus:bg-white"
               />
@@ -98,7 +134,10 @@ export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
               <input
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setFormMessage('');
+                }}
                 placeholder="nengkuem@example.com"
                 className="h-12 w-full rounded-2xl border-2 border-sky-100 bg-sky-50/50 px-4 text-sm font-bold text-gray-700 outline-none transition-colors placeholder:text-gray-300 focus:border-sky-400 focus:bg-white"
               />
@@ -110,7 +149,10 @@ export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
                 <input
                   type="password"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    setFormMessage('');
+                  }}
                   placeholder="비밀번호"
                   className="h-12 w-full rounded-2xl border-2 border-sky-100 bg-sky-50/50 px-4 text-sm font-bold text-gray-700 outline-none transition-colors placeholder:text-gray-300 focus:border-sky-400 focus:bg-white"
                 />
@@ -121,7 +163,10 @@ export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
                 <input
                   type="password"
                   value={passwordConfirm}
-                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                  onChange={(event) => {
+                    setPasswordConfirm(event.target.value);
+                    setFormMessage('');
+                  }}
                   placeholder="한 번 더 입력"
                   className="h-12 w-full rounded-2xl border-2 border-sky-100 bg-sky-50/50 px-4 text-sm font-bold text-gray-700 outline-none transition-colors placeholder:text-gray-300 focus:border-sky-400 focus:bg-white"
                 />
@@ -133,7 +178,10 @@ export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
                 <input
                   type="checkbox"
                   checked={agreeTerms}
-                  onChange={(event) => setAgreeTerms(event.target.checked)}
+                  onChange={(event) => {
+                    setAgreeTerms(event.target.checked);
+                    setFormMessage('');
+                  }}
                   className="mt-0.5 h-4 w-4 rounded border-sky-300 accent-sky-600"
                 />
                 냉큼 이용약관과 개인정보 처리방침에 동의합니다.
@@ -146,10 +194,10 @@ export function RegisterPage({ onBackToLogin, onRegister }: RegisterPageProps) {
 
             <button
               type="submit"
-              disabled={!agreeTerms}
+              disabled={!agreeTerms || isSubmitting}
               className="h-12 w-full rounded-2xl bg-sky-600 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-all hover:bg-sky-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
-              회원가입
+              {isSubmitting ? '가입 중...' : '회원가입'}
             </button>
           </form>
 

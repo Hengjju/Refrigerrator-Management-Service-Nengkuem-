@@ -1,29 +1,46 @@
 import { useState, type FormEvent } from 'react';
 
+import type { LoginRequest } from '../api/authApi';
+
 interface LoginPageProps {
   noticeMessage?: string;
-  onLogin: () => void;
+  onLogin: (values: LoginRequest) => Promise<void>;
   onRegister: () => void;
 }
 
 // 로그인 전 첫 화면입니다.
-// 실제 인증 API가 붙기 전까지는 입력값을 확인한 뒤 대시보드로 이동하는 UI 흐름만 담당합니다.
+// 입력값을 확인한 뒤 Supabase 로그인 API 호출을 App에 요청합니다.
 export function LoginPage({ noticeMessage, onLogin, onRegister }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberLogin, setRememberLogin] = useState(true);
   const [formMessage, setFormMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !password.trim()) {
       setFormMessage('이메일과 비밀번호를 모두 입력해주세요.');
       return;
     }
 
     setFormMessage('');
-    onLogin();
+    setIsSubmitting(true);
+
+    try {
+      await onLogin({
+        email: trimmedEmail,
+        password,
+        rememberLogin,
+      });
+    } catch (error) {
+      setFormMessage(error instanceof Error ? error.message : '로그인 중 문제가 생겼습니다.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -127,9 +144,10 @@ export function LoginPage({ noticeMessage, onLogin, onRegister }: LoginPageProps
 
             <button
               type="submit"
-              className="h-12 w-full rounded-2xl bg-sky-600 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-all hover:bg-sky-700 active:scale-[0.99]"
+              disabled={isSubmitting}
+              className="h-12 w-full rounded-2xl bg-sky-600 text-sm font-bold text-white shadow-lg shadow-sky-200 transition-all hover:bg-sky-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
             >
-              로그인
+              {isSubmitting ? '로그인 중...' : '로그인'}
             </button>
           </form>
 

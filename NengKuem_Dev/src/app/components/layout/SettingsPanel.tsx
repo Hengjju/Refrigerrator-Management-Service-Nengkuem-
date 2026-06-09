@@ -1,7 +1,7 @@
 interface SettingsPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  onLogout: () => void;
+  onLogout: () => void | Promise<void>;
 }
 
 // 오른쪽 상단 톱니바퀴 버튼에서 열리는 계정/로그인 설정 패널입니다.
@@ -65,9 +65,9 @@ export function SettingsPanel({ isOpen, onClose, onLogout }: SettingsPanelProps)
 
         <section className="mt-3 rounded-xl border-2 border-sky-100 bg-white p-4">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-bold text-gray-700">로그인 연동</span>
+            <span className="text-sm font-bold text-gray-700">Supabase 연동</span>
             <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-bold text-sky-600">
-              준비중
+              연결됨
             </span>
           </div>
         </section>
