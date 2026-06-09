@@ -2,8 +2,12 @@
   <h2 style="margin: 0; border-bottom: none;">
     <strong>냉큼<br>(Neng_Kuem)</strong>
   </h2>
+<<<<<<< HEAD
   
   <img  src="https://github.com/user-attachments/assets/a387a513-a421-46d4-ac15-92c32adaea37" width="400" height="400" style="object-fit: contain; margin: 0;">
+=======
+  <img src="Nengkuem_Logo.png" width="400" height="400" style="object-fit: contain; margin: 0;">
+>>>>>>> test
 </div>
 
 <p align="center">
@@ -21,7 +25,11 @@
 ## 🖼️ Preview
 
 <div align="center">
+<<<<<<< HEAD
   <img src="https://github.com/user-attachments/assets/bff21aa7-6647-4d10-b6de-a00711894524" width="800">
+=======
+  <img src="Interface_screenshot/User_Interface.png" width="800">
+>>>>>>> test
 </div>
 
 <br>
@@ -72,4 +80,9 @@ fix: 회원가입 에러 수정
 
                                                       
 
+<<<<<<< HEAD
                                                   
+=======
+                                                      
+  
+>>>>>>> test

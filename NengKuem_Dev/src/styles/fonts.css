@@ -1,0 +1,10 @@
+/* 앱 전체에서 쓰는 기본 한글 폰트입니다. */
+@import url('http://fonts.googleapis.com/earlyaccess/nanumgothic.css');
+
+/* 냉끔 로고처럼 강조되는 제목에 사용하는 둥근 느낌의 표시용 폰트입니다. */
+@font-face {
+    font-family: 'YeogiOttaeJalnan';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.2/JalnanOTF00.woff') format('woff');
+    font-weight: normal;
+    font-display: swap;
+}

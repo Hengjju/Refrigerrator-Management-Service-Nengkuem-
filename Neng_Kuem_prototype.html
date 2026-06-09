@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유통기한 경고 UI 비교</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bg-sky-theme { background-color: #A3CDE4; }
+        .text-sky-theme { color: #A3CDE4; }
+    </style>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen p-4">
+
+    <div class="bg-white w-full max-w-[375px] min-h-[812px] rounded-[40px] shadow-2xl relative overflow-hidden border-8 border-white ring-1 ring-gray-200">
+        
+        <!-- 상단 헤더 -->
+        <div class="bg-sky-theme h-24 rounded-b-3xl px-6 pt-10 pb-4 flex justify-between items-center text-white">
+            <h1 class="text-xl font-bold tracking-tight">유통기한 경고 UI</h1>
+        </div>
+
+        <div class="px-5 py-6 space-y-6">
+            
+            <!-- 1순위: 왼쪽 포인트 테두리 (가장 추천) -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-500 mb-2">1순위: 왼쪽 포인트 테두리 + 뱃지</h2>
+                <div class="bg-white border-y border-r border-gray-100 border-l-4 border-l-red-500 rounded-2xl p-4 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-800 text-sm">계란 10구</h3>
+                        <p class="text-xs text-gray-400 mt-1">2026.05.02까지</p>
+                    </div>
+                    <span class="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-1 rounded-full">D-Day</span>
+                </div>
+            </div>
+
+            <!-- 2순위: 얇은 전체 테두리 + 글자색 -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-500 mb-2">2순위: 얇은 전체 테두리 + 글자색 강조</h2>
+                <div class="bg-white border-2 border-red-400 rounded-2xl p-4 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-red-600 text-sm">두부 1모</h3>
+                        <p class="text-xs text-red-400 mt-1">2026.05.01까지</p>
+                    </div>
+                    <span class="text-red-500 text-sm font-bold">지남</span>
+                </div>
+            </div>
+
+            <!-- 3순위: 연한 파스텔 배경 -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-500 mb-2">3순위: 연한 파스텔 배경</h2>
+                <div class="bg-red-50 border border-red-100 rounded-2xl p-4 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-red-800 text-sm">돼지고기 300g</h3>
+                        <p class="text-xs text-red-500 mt-1">2026.05.02까지</p>
+                    </div>
+                    <span class="text-red-600 text-sm font-bold">D-Day</span>
+                </div>
+            </div>
+
+            <hr class="border-gray-100 border-dashed my-4">
+
+            <!-- 비교용: 정상 상태의 식재료 (하늘색 테마와 조화) -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-500 mb-2">비교용: 안전한 식재료 (기본 디자인)</h2>
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-800 text-sm">양파 1망</h3>
+                        <p class="text-xs text-gray-400 mt-1">2026.05.20까지</p>
+                    </div>
+                    <span class="text-sky-theme text-sm font-bold">D-18</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
