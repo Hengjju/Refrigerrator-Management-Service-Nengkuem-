@@ -8,16 +8,29 @@ import { RegisterPage } from './pages/RegisterPage';
 // 로그인 상태에 따라 인증 화면과 냉장고 화면의 접근 흐름을 정리합니다.
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginNoticeMessage, setLoginNoticeMessage] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = () => {
+    setLoginNoticeMessage('');
     setIsLoggedIn(true);
     navigate('/dashboard');
   };
 
+  const handleOpenRegister = () => {
+    setLoginNoticeMessage('');
+    navigate('/register');
+  };
+
   const handleRegister = () => {
-    setIsLoggedIn(true);
-    navigate('/dashboard');
+    setIsLoggedIn(false);
+    setLoginNoticeMessage('가입이 완료되었습니다.');
+    navigate('/login');
+  };
+
+  const handleBackToLogin = () => {
+    setLoginNoticeMessage('');
+    navigate('/login');
   };
 
   return (
@@ -29,7 +42,11 @@ export default function App() {
           isLoggedIn ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <LoginPage onLogin={handleLogin} onRegister={() => navigate('/register')} />
+            <LoginPage
+              noticeMessage={loginNoticeMessage}
+              onLogin={handleLogin}
+              onRegister={handleOpenRegister}
+            />
           )
         }
       />
@@ -39,7 +56,7 @@ export default function App() {
           isLoggedIn ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <RegisterPage onBackToLogin={() => navigate('/login')} onRegister={handleRegister} />
+            <RegisterPage onBackToLogin={handleBackToLogin} onRegister={handleRegister} />
           )
         }
       />

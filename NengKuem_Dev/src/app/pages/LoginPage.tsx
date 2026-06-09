@@ -1,19 +1,28 @@
 import { useState, type FormEvent } from 'react';
 
 interface LoginPageProps {
+  noticeMessage?: string;
   onLogin: () => void;
   onRegister: () => void;
 }
 
 // 로그인 전 첫 화면입니다.
-// 실제 인증 API가 붙기 전까지는 입력값을 받은 뒤 대시보드로 이동하는 UI 흐름만 담당합니다.
-export function LoginPage({ onLogin, onRegister }: LoginPageProps) {
+// 실제 인증 API가 붙기 전까지는 입력값을 확인한 뒤 대시보드로 이동하는 UI 흐름만 담당합니다.
+export function LoginPage({ noticeMessage, onLogin, onRegister }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberLogin, setRememberLogin] = useState(true);
+  const [formMessage, setFormMessage] = useState('');
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!email.trim() || !password.trim()) {
+      setFormMessage('이메일과 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+
+    setFormMessage('');
     onLogin();
   };
 
@@ -62,13 +71,22 @@ export function LoginPage({ onLogin, onRegister }: LoginPageProps) {
             <p className="mt-2 text-sm font-bold text-gray-500">로그인</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {noticeMessage && (
+            <p className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-xs font-bold text-emerald-700">
+              {noticeMessage}
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold text-sky-700">이메일</span>
               <input
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setFormMessage('');
+                }}
                 placeholder="nengkuem@example.com"
                 className="h-12 w-full rounded-2xl border-2 border-sky-100 bg-sky-50/50 px-4 text-sm font-bold text-gray-700 outline-none transition-colors placeholder:text-gray-300 focus:border-sky-400 focus:bg-white"
               />
@@ -79,11 +97,18 @@ export function LoginPage({ onLogin, onRegister }: LoginPageProps) {
               <input
                 type="password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setFormMessage('');
+                }}
                 placeholder="비밀번호 입력"
                 className="h-12 w-full rounded-2xl border-2 border-sky-100 bg-sky-50/50 px-4 text-sm font-bold text-gray-700 outline-none transition-colors placeholder:text-gray-300 focus:border-sky-400 focus:bg-white"
               />
             </label>
+
+            {formMessage && (
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-500">{formMessage}</p>
+            )}
 
             <div className="flex items-center justify-between gap-3 text-xs font-bold">
               <label className="flex items-center gap-2 text-gray-500">
